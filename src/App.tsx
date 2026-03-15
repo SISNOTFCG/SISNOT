@@ -421,7 +421,7 @@ export default function App() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2 md:col-span-2">
-                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Nº PRE</label>
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">PRE</label>
                       <div className="flex items-center">
                         <input 
                           type="text"
@@ -434,13 +434,13 @@ export default function App() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Nº NOTIFICAÇÃO</label>
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">NOT. NOTIFICAÇÃO</label>
                       <input 
                         type="text"
                         value={formData.notificationNumber}
                         onChange={(e) => updateFormData('notificationNumber', maskNotification(e.target.value))}
                         className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
-                        placeholder="00000000/ NOT /0000000. [Nº PRE]/PRE"
+                        placeholder="00000000/ NOT /0000000. [PRE]/PRE"
                       />
                     </div>
                     <div className="space-y-2">
@@ -909,8 +909,8 @@ export default function App() {
                         </div>
                         <div className="p-4 bg-white min-w-[220px] flex flex-col justify-center">
                           <p className="text-[10px] font-black uppercase tracking-widest mb-1 text-stone-400">Identificação</p>
-                          <p className="text-xs font-black text-stone-900">Nº PRE: {formData.preNumber}/PRE</p>
-                          <p className="text-xs font-black text-stone-900">Nº NOTIFICAÇÃO: {formData.notificationNumber}</p>
+                          <p className="text-xs font-black text-stone-900">PRE: {formData.preNumber}/PRE</p>
+                          <p className="text-xs font-black text-stone-900">NOT. NOTIFICAÇÃO: {formData.notificationNumber}</p>
                           <div className="flex gap-4 mt-2 text-[10px] font-bold text-stone-500">
                             <span>{format(new Date(), "dd/MM/yyyy")}</span>
                             <span>{format(new Date(), "HH:mm")}</span>
