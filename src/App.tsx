@@ -169,74 +169,115 @@ export default function App() {
     
     setIsSubmitting(true);
     try {
-      const headerCanvas = await html2canvas(pdfHeaderRef.current, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      });
-      
-      const bodyCanvas = await html2canvas(pdfBodyRef.current, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      });
-      
-      if (headerCanvas.width === 0 || bodyCanvas.width === 0) {
-        throw new Error('Canvas width is zero');
-      }
-
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = 210;
       const pageHeight = 297;
-      const bottomMargin = 20; // 2cm
+      const bottomMargin = 20;
+      const sidePadding = 12;
       
+      // 1. Capture Header
+      const headerCanvas = await html2canvas(pdfHeaderRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
       const headerImgData = headerCanvas.toDataURL('image/png');
       const headerWidth = pageWidth;
       const headerHeight = (headerCanvas.height * headerWidth) / headerCanvas.width;
       
-      const bodyWidth = pageWidth;
-      const bodyHeight = (bodyCanvas.height * bodyWidth) / bodyCanvas.width;
-      
-      const availableHeight = pageHeight - headerHeight - bottomMargin;
-      
-      if (availableHeight <= 0) {
-        throw new Error('Header is too tall for the page');
-      }
+      let currentY = headerHeight;
+      let currentPage = 1;
 
-      const totalPages = Math.max(1, Math.ceil(bodyHeight / availableHeight));
-      
-      for (let i = 0; i < totalPages; i++) {
-        if (i > 0) pdf.addPage();
-        
-        // Add Header
+      const addHeaderAndPageNumber = (pageNum: number) => {
         pdf.addImage(headerImgData, 'PNG', 0, 0, headerWidth, headerHeight);
+      };
+
+      // Helper to add a section to the PDF
+      const addSection = async (elementId: string) => {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+        
+        const canvas = await html2canvas(element, { 
+          scale: 2, 
+          useCORS: true,
+          backgroundColor: '#ffffff'
+        });
+        const imgWidth = pageWidth - (sidePadding * 2);
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        if (currentY + imgHeight > pageHeight - bottomMargin) {
+          pdf.addPage();
+          currentPage++;
+          currentY = headerHeight;
+          addHeaderAndPageNumber(currentPage);
+        }
+        
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', sidePadding, currentY, imgWidth, imgHeight);
+        currentY += imgHeight + 6; // Spacing between sections
+      };
+
+      // Special handling for irregularities to avoid cutting text
+      const addIrregularities = async () => {
+        const container = document.getElementById('pdf-section-irregularities');
+        if (!container) return;
+
+        // Add the title of the section first
+        const titleElement = container.querySelector('.bg-stone-800');
+        if (titleElement) {
+          const canvas = await html2canvas(titleElement as HTMLElement, { scale: 2, backgroundColor: '#ffffff' });
+          const imgWidth = pageWidth - (sidePadding * 2);
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          
+          if (currentY + imgHeight > pageHeight - bottomMargin) {
+            pdf.addPage();
+            currentPage++;
+            currentY = headerHeight;
+            addHeaderAndPageNumber(currentPage);
+          }
+          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', sidePadding, currentY, imgWidth, imgHeight);
+          currentY += imgHeight;
+        }
+
+        const items = container.querySelectorAll('.pdf-irregularity-item');
+        for (const item of Array.from(items)) {
+          const canvas = await html2canvas(item as HTMLElement, { scale: 2, backgroundColor: '#ffffff' });
+          const imgWidth = pageWidth - (sidePadding * 2);
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+          if (currentY + imgHeight > pageHeight - bottomMargin) {
+            pdf.addPage();
+            currentPage++;
+            currentY = headerHeight;
+            addHeaderAndPageNumber(currentPage);
+          }
+          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', sidePadding, currentY, imgWidth, imgHeight);
+          currentY += imgHeight;
+        }
+        currentY += 6;
+      };
+
+      // Initial page setup
+      addHeaderAndPageNumber(1);
+
+      // Add sections in order
+      await addSection('pdf-section-data');
+      await addSection('pdf-section-deadline');
+      await addIrregularities();
+      await addSection('pdf-section-signatures');
+
+      // Finalize PDF: Add page numbers and footer
+      const totalPages = currentPage;
+      for (let i = 1; i <= totalPages; i++) {
+        pdf.setPage(i);
         
         // Add Page Number (e.g. 1/3)
         pdf.setFontSize(9);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(0, 0, 0);
-        pdf.text(`${i + 1}/${totalPages}`, 185, 48); // Positioned in the identification box
+        pdf.text(`${i}/${totalPages}`, 185, 48);
         
-        // Add Body Slice
-        const sourceY = i * (availableHeight * (bodyCanvas.height / bodyHeight));
-        const sourceHeight = Math.min(availableHeight * (bodyCanvas.height / bodyHeight), bodyCanvas.height - sourceY);
-        
-        if (sourceHeight > 0) {
-          const sliceCanvas = document.createElement('canvas');
-          sliceCanvas.width = bodyCanvas.width;
-          sliceCanvas.height = sourceHeight;
-          const ctx = sliceCanvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(bodyCanvas, 0, sourceY, bodyCanvas.width, sourceHeight, 0, 0, bodyCanvas.width, sourceHeight);
-            const sliceImgData = sliceCanvas.toDataURL('image/png');
-            pdf.addImage(sliceImgData, 'PNG', 0, headerHeight, bodyWidth, (sourceHeight * bodyWidth) / bodyCanvas.width);
-          }
-        }
-
         // Add Footer only on last page
-        if (i === totalPages - 1) {
+        if (i === totalPages) {
           pdf.setFontSize(8);
           pdf.setTextColor(100, 100, 100);
           const footerLines = [
@@ -255,7 +296,26 @@ export default function App() {
         }
       }
       
+      const pdfBase64 = pdf.output('datauristring').split(',')[1];
+      
+      // Save locally for the user
       pdf.save(`notificacao_${formData.preNumber || 'documento'}.pdf`);
+      
+      // Send to server for Email and SMS delivery
+      try {
+        await fetch('/api/send-pdf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pdfBase64,
+            email: formData.responsible?.email,
+            phone: formData.company?.phone,
+            preNumber: formData.preNumber
+          })
+        });
+      } catch (apiError) {
+        console.error('Error sending PDF to server:', apiError);
+      }
       
       await new Promise(resolve => setTimeout(resolve, 1500));
       setIsSuccess(true);
@@ -719,7 +779,7 @@ export default function App() {
                     <div className="border-2 border-dashed border-stone-200 rounded-2xl bg-stone-50 overflow-hidden h-64">
                       <SignatureCanvas 
                         ref={responsibleSigRef}
-                        penColor="black"
+                        penColor="#000080"
                         canvasProps={{ className: "w-full h-full" }}
                       />
                     </div>
@@ -752,7 +812,7 @@ export default function App() {
                         <div className="border-2 border-dashed border-stone-200 rounded-2xl bg-stone-50 overflow-hidden h-48">
                           <SignatureCanvas 
                             ref={(el) => { inspectorSigRefs.current[index] = el; }}
-                            penColor="black"
+                            penColor="#000080"
                             canvasProps={{ className: "w-full h-full" }}
                           />
                         </div>
@@ -854,7 +914,7 @@ export default function App() {
 
                     <div ref={pdfBodyRef} className="w-[210mm] p-12 pt-0 font-sans text-stone-900 bg-white">
                       <div className="space-y-6">
-                        <div className="rounded-xl border border-stone-200 overflow-hidden">
+                        <div id="pdf-section-data" className="rounded-xl border border-stone-200 overflow-hidden">
                           <div className="text-white px-4 py-2 text-[10px] font-black uppercase tracking-widest bg-stone-800">Dados da Edificação / Evento</div>
                           <div className="p-4 grid grid-cols-2 gap-y-3 gap-x-6 text-[11px]">
                             <div className="col-span-2 flex border-b border-stone-100 pb-1">
@@ -888,7 +948,7 @@ export default function App() {
                           </div>
                         </div>
 
-                        <div className="rounded-xl border-2 border-stone-200 p-5 bg-white">
+                        <div id="pdf-section-deadline" className="rounded-xl border-2 border-stone-200 p-5 bg-white">
                           <h2 className="text-xs font-black uppercase mb-3 flex items-center gap-2 text-stone-900">
                             <AlertTriangle size={14} /> PRAZO PARA CUMPRIMENTO
                           </h2>
@@ -899,19 +959,19 @@ export default function App() {
                           </div>
                         </div>
 
-                        <div className="rounded-xl border border-stone-200 overflow-hidden">
+                        <div id="pdf-section-irregularities" className="rounded-xl border border-stone-200 overflow-hidden">
                           <div className="text-white px-4 py-2 text-[10px] font-black uppercase tracking-widest bg-stone-800">Exigências Técnicas a Cumprir</div>
-                          <div className="p-6 space-y-4">
+                          <div className="p-6 space-y-1">
                             {formData.irregularities?.map((i, idx) => (
-                              <div key={idx} className="flex gap-4 items-start border-b border-stone-50 pb-3 last:border-0">
-                                <span className="flex items-center justify-center w-6 h-6 rounded-full font-black text-[10px] shrink-0 bg-stone-100 text-stone-900">{idx + 1}</span>
-                                <span className="text-[11px] font-medium pt-1 text-stone-800">{i}</span>
+                              <div key={idx} className="pdf-irregularity-item flex gap-4 items-start border-b border-stone-50 pb-1 last:border-0" style={{ lineHeight: '1.15' }}>
+                                <span className="flex items-center justify-center w-5 h-5 rounded-full font-black text-[9px] shrink-0 bg-stone-100 text-stone-900">{idx + 1}</span>
+                                <span className="text-[11px] font-medium pt-0.5 text-stone-800">{i}</span>
                               </div>
                             ))}
                           </div>
                         </div>
 
-                        <div className="mt-12 grid grid-cols-2 gap-12">
+                        <div id="pdf-section-signatures" className="mt-12 grid grid-cols-2 gap-12">
                           <div className="text-center space-y-3">
                             <div className="h-24 flex items-end justify-center border-b-2 border-stone-200 pb-2">
                               {formData.signatures?.responsible && <img src={formData.signatures.responsible} className="max-h-full grayscale" alt="Assinatura Responsável" />}
