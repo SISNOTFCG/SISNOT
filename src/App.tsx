@@ -440,7 +440,7 @@ export default function App() {
                         value={formData.notificationNumber}
                         onChange={(e) => updateFormData('notificationNumber', maskNotification(e.target.value))}
                         className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
-                        placeholder="00000000/ NOT /0000000. [Nº PRÉ]/PRE"
+                        placeholder="00000000/ NOT /0000000. [Nº PRE]/PRE"
                       />
                     </div>
                     <div className="space-y-2">
@@ -773,7 +773,7 @@ export default function App() {
                   </div>
                   <div className="space-y-3">
                     <div className="flex justify-between items-end">
-                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Assinatura do Responsável ({formData.responsible?.name})</label>
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Assinatura do Responsável ({formData.responsible?.name} - CPF: {formData.responsible?.cpf})</label>
                       <button onClick={() => responsibleSigRef.current?.clear()} className="text-[10px] text-red-600 font-bold hover:underline">Limpar</button>
                     </div>
                     <div className="border-2 border-dashed border-stone-200 rounded-2xl bg-stone-50 overflow-hidden h-64">
@@ -887,12 +887,19 @@ export default function App() {
                   <div className="fixed left-[-9999px] top-0">
                     <div ref={pdfHeaderRef} className="w-[210mm] p-12 pb-0 font-sans text-stone-900 bg-white">
                       <div className="flex justify-between items-center pb-6 mb-8 border-b-4 border-stone-900">
+                        <img 
+                          src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bras%C3%A3o_do_Corpo_de_Bombeiros_Militar_do_Estado_do_Mato_Grosso_do_Sul.png/200px-Bras%C3%A3o_do_Corpo_de_Bombeiros_Militar_do_Estado_do_Mato_Grosso_do_Sul.png" 
+                          className="w-20 h-20 object-contain" 
+                          alt="Logo CBMMS" 
+                          referrerPolicy="no-referrer"
+                        />
                         <div className="text-center flex-1 px-6">
                           <p className="text-xs font-black uppercase tracking-tighter text-stone-900">Estado de Mato Grosso do Sul</p>
                           <p className="text-[10px] font-bold uppercase text-stone-600">Secretaria de Estado de Justiça e Segurança Pública</p>
                           <p className="text-lg font-black uppercase mt-1 text-stone-900">Corpo de Bombeiros Militar</p>
                           <p className="text-[10px] font-bold text-stone-500">3º SGBM / 2º GBM - Maracaju - MS</p>
                         </div>
+                        <div className="w-20"></div>
                       </div>
 
                       <div className="flex justify-between items-stretch mb-8 rounded-lg overflow-hidden border border-stone-200 bg-stone-50">
@@ -978,6 +985,7 @@ export default function App() {
                             </div>
                             <div>
                               <p className="text-[11px] font-black uppercase text-stone-800">{formData.responsible?.name}</p>
+                              <p className="text-[9px] font-bold uppercase text-stone-600">CPF: {formData.responsible?.cpf}</p>
                               <p className="text-[9px] font-bold uppercase tracking-widest text-stone-400">Responsável pelo Local</p>
                             </div>
                           </div>
