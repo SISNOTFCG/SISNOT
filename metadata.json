@@ -1,0 +1,5 @@
+{
+  "name": "SISNOT",
+  "description": "Sistema de gestão de vistorias técnicas para o Corpo de Bombeiros Militar, permitindo a geração de notificações em PDF com assinaturas digitais.",
+  "requestFramePermissions": []
+}
