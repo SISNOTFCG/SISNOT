@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
 import { motion, AnimatePresence } from 'motion/react';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { cn } from './utils';
@@ -923,7 +923,7 @@ export default function App() {
                     <div ref={pdfHeaderRef} className="w-[210mm] p-12 pb-0 font-sans text-stone-900 bg-white">
                       <div className="flex justify-between items-center pb-6 mb-8 border-b-4 border-stone-900">
                         <img 
-                          src="https://lh3.googleusercontent.com/d/1D8X_R_8_8_8_8_8_8_8_8_8_8_8_8_8_8_8" 
+                          src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bras%C3%A3o_do_Corpo_de_Bombeiros_Militar_do_Estado_do_Mato_Grosso_do_Sul.png/512px-Bras%C3%A3o_do_Corpo_de_Bombeiros_Militar_do_Estado_do_Mato_Grosso_do_Sul.png" 
                           className="w-20 h-20 object-contain" 
                           alt="Logo CBMMS" 
                           referrerPolicy="no-referrer"
@@ -996,6 +996,7 @@ export default function App() {
                           </h2>
                           <div className="space-y-3 text-[11px] leading-relaxed text-stone-700">
                             <p>Em conformidade com a <strong>Lei Estadual nº 4.335/2013</strong>, Vossa Senhoria deverá cumprir as exigências listadas abaixo no prazo de <span className="text-stone-900 font-black underline decoration-2 underline-offset-4">{formData.deadlineDays} DIAS</span>, a contar da data de recebimento deste documento.</p>
+                            <p className="text-stone-900 font-bold">O prazo para cumprimento desta notificação se encerra em: {formData.date && formData.deadlineDays ? format(addDays(new Date(formData.date), formData.deadlineDays), "dd/MM/yyyy") : format(addDays(new Date(), 30), "dd/MM/yyyy")}</p>
                             <p className="font-bold text-stone-900">O não cumprimento desta notificação sujeita o infrator à multa, interdição ou outras penalidades previstas em Lei.</p>
                             <p className="border-l-4 border-stone-900 pl-3 italic text-stone-500">Vossa Senhoria fica cientificada de que, conforme o Art. 9º da Lei nº 4.335/2013, o local não pode funcionar sem o devido Alvará do Corpo de Bombeiros Militar do Mato Grosso do Sul.</p>
                           </div>
