@@ -1185,7 +1185,6 @@ export default function App() {
                           <p className="text-[12px] font-black uppercase text-black">ESTADO DE MATO GROSSO DO SUL</p>
                           <p className="text-[11px] font-bold uppercase text-black">SECRETARIA DE ESTADO DE JUSTIÇA E SEGURANÇA PÚBLICA</p>
                           <p className="text-[14px] font-black uppercase text-black">CORPO DE BOMBEIROS MILITAR</p>
-                          <p className="text-[11px] font-bold uppercase text-black">13º SUBGRUPAMENTO DE BOMBEIROS MILITAR INDEPENDENTE</p>
                         </div>
                         <img 
                           src={`/api/proxy-image?url=${encodeURIComponent('https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Bras%C3%A3o_de_Mato_Grosso_do_Sul.svg/1200px-Bras%C3%A3o_de_Mato_Grosso_do_Sul.svg.png')}`} 
@@ -1215,6 +1214,10 @@ export default function App() {
                               <span className="font-medium">{formData.company?.pscip}</span>
                             </div>
                             <div className="flex border-b border-black pb-0.5 ml-4">
+                              <span className="font-black uppercase w-12">PRE:</span>
+                              <span className="font-medium">{formData.preNumber}</span>
+                            </div>
+                            <div className="col-span-2 flex border-b border-black pb-0.5">
                               <span className="font-black uppercase w-24">CNPJ/CPF:</span>
                               <span className="font-medium">{formData.company?.cnpj}</span>
                             </div>
@@ -1224,7 +1227,7 @@ export default function App() {
                             </div>
                             <div className="col-span-2 flex border-b border-black pb-0.5">
                               <span className="font-black uppercase w-56">Proprietário ou Responsável:</span>
-                              <span className="font-medium">{formData.responsible?.name}</span>
+                              <span className="font-medium">{formData.responsible?.name} {formData.responsible?.cpf ? `- CPF: ${formData.responsible.cpf}` : ''}</span>
                             </div>
                             <div className="col-span-2 flex border-b border-black pb-0.5">
                               <span className="font-black uppercase w-56">Endereço da Edificação:</span>
@@ -1285,10 +1288,14 @@ export default function App() {
 
                         <div className="text-[12px] space-y-2 mt-4">
                           <p className="font-black uppercase text-center border-b border-black pb-1">ACOMPANHOU A VISTORIA</p>
-                          <div className="grid grid-cols-3 gap-4">
-                            <div className="col-span-1 flex border-b border-black">
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                            <div className="flex border-b border-black">
                               <span className="font-black mr-2">Nome:</span>
                               <span className="font-medium truncate">{formData.witness?.name}</span>
+                            </div>
+                            <div className="flex border-b border-black">
+                              <span className="font-black mr-2">Função:</span>
+                              <span className="font-medium">{formData.witness?.role}</span>
                             </div>
                             <div className="flex border-b border-black">
                               <span className="font-black mr-2">RG:</span>
