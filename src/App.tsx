@@ -37,9 +37,10 @@ export default function App() {
     preNumber: '',
     notificationNumber: '',
     deadlineDays: 30,
-    company: { name: '', cnpj: '', street: '', number: '', neighborhood: '', address: '', phone: '', occupation: [], pscip: '' },
+    company: { name: '', cnpj: '', street: '', number: '', neighborhood: '', city: '', address: '', phone: '', occupation: [], pscip: '' },
     irregularities: [],
     responsible: { name: '', email: '@', cpf: '' },
+    witness: { name: '', role: '', cpf: '', rg: '' },
     inspectors: [{ name: '', rank: '', registration: '' }],
     signatures: { responsible: '', inspectors: [] }
   });
@@ -154,9 +155,15 @@ export default function App() {
         if (!formData.company?.street) { newErrors.companyStreet = true; isValid = false; }
         if (!formData.company?.number) { newErrors.companyNumber = true; isValid = false; }
         if (!formData.company?.neighborhood) { newErrors.companyNeighborhood = true; isValid = false; }
+        if (!formData.company?.city) { newErrors.companyCity = true; isValid = false; }
         if (!formData.company?.phone) { newErrors.companyPhone = true; isValid = false; }
         if (!formData.company?.occupation || formData.company.occupation.length === 0) { newErrors.companyOccupation = true; isValid = false; }
         
+        if (!formData.witness?.name) { newErrors.witnessName = true; isValid = false; }
+        if (!formData.witness?.role) { newErrors.witnessRole = true; isValid = false; }
+        if (!formData.witness?.rg) { newErrors.witnessRg = true; isValid = false; }
+        if (!formData.witness?.cpf) { newErrors.witnessCpf = true; isValid = false; }
+
         if (!isValid) {
           alert('Por favor, preencha todos os campos obrigatórios destacados em vermelho.');
         }
@@ -184,11 +191,8 @@ export default function App() {
         }
         break;
       case 5:
-        const allInspectorsSigned = formData.signatures?.inspectors?.every(sig => sig && sig.length > 0);
-        if (!allInspectorsSigned || formData.signatures?.inspectors?.length !== formData.inspectors?.length) {
-          alert('Todos os vistoriantes devem assinar.');
-          isValid = false;
-        }
+        // Signatures are now optional
+        isValid = true;
         break;
     }
 
@@ -202,18 +206,16 @@ export default function App() {
   };
 
   const saveResponsibleSignature = () => {
-    if (responsibleSigRef.current && !responsibleSigRef.current.isEmpty()) {
-      setFormData(prev => ({
-        ...prev,
-        signatures: {
-          ...prev.signatures!,
-          responsible: responsibleSigRef.current?.toDataURL() || ''
-        }
-      }));
-      setStep(prev => prev + 1);
-    } else {
-      alert('O responsável deve assinar para prosseguir.');
-    }
+    setFormData(prev => ({
+      ...prev,
+      signatures: {
+        ...prev.signatures!,
+        responsible: responsibleSigRef.current && !responsibleSigRef.current.isEmpty() 
+          ? responsibleSigRef.current.toDataURL() 
+          : ''
+      }
+    }));
+    setStep(prev => prev + 1);
   };
 
   const saveInspectorSignatures = () => {
@@ -458,9 +460,10 @@ export default function App() {
       preNumber: '',
       notificationNumber: '',
       deadlineDays: 30,
-      company: { name: '', cnpj: '', pscip: '', street: '', number: '', neighborhood: '', address: '', phone: '', occupation: [] },
+      company: { name: '', cnpj: '', pscip: '', street: '', number: '', neighborhood: '', city: '', address: '', phone: '', occupation: [] },
       irregularities: [],
       responsible: { name: '', email: '@', cpf: '' },
+      witness: { name: '', role: '', cpf: '', rg: '' },
       inspectors: [{ name: '', rank: '', registration: '' }],
       signatures: { responsible: '', inspectors: [] }
     });
@@ -723,6 +726,19 @@ export default function App() {
                       />
                     </div>
                     <div className="space-y-2">
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Cidade</label>
+                      <input 
+                        type="text"
+                        value={formData.company?.city}
+                        onChange={(e) => updateNestedField('company', 'city', e.target.value)}
+                        className={cn(
+                          "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
+                          errors.companyCity && "border-red-500 ring-2 ring-red-200"
+                        )}
+                        placeholder="Maracaju"
+                      />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
                       <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Telefone de Contato</label>
                       <input 
                         type="text"
@@ -734,6 +750,64 @@ export default function App() {
                         )}
                         placeholder="(00) 00000-0000"
                       />
+                    </div>
+
+                    <div className="md:col-span-2 pt-4 border-t border-stone-100">
+                      <h3 className="text-sm font-bold text-stone-400 uppercase tracking-widest mb-4">Acompanhou a Vistoria</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2 md:col-span-2">
+                          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Nome</label>
+                          <input 
+                            type="text"
+                            value={formData.witness?.name}
+                            onChange={(e) => updateNestedField('witness', 'name', e.target.value)}
+                            className={cn(
+                              "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
+                              errors.witnessName && "border-red-500 ring-2 ring-red-200"
+                            )}
+                            placeholder="Nome de quem acompanhou"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Função no Local</label>
+                          <input 
+                            type="text"
+                            value={formData.witness?.role}
+                            onChange={(e) => updateNestedField('witness', 'role', e.target.value)}
+                            className={cn(
+                              "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
+                              errors.witnessRole && "border-red-500 ring-2 ring-red-200"
+                            )}
+                            placeholder="Ex: Gerente, Proprietário"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">RG</label>
+                          <input 
+                            type="text"
+                            value={formData.witness?.rg}
+                            onChange={(e) => updateNestedField('witness', 'rg', e.target.value)}
+                            className={cn(
+                              "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
+                              errors.witnessRg && "border-red-500 ring-2 ring-red-200"
+                            )}
+                            placeholder="0.000.000"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">CPF</label>
+                          <input 
+                            type="text"
+                            value={formData.witness?.cpf}
+                            onChange={(e) => updateNestedField('witness', 'cpf', maskCPF(e.target.value))}
+                            className={cn(
+                              "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
+                              errors.witnessCpf && "border-red-500 ring-2 ring-red-200"
+                            )}
+                            placeholder="000.000.000-00"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <div className="flex justify-end pt-4">
@@ -975,11 +1049,11 @@ export default function App() {
                 <div className="space-y-6">
                   <div className="flex items-center gap-3 mb-2">
                     <PenTool className="text-red-600" />
-                    <h2 className="text-xl font-bold">Assinatura do Responsável</h2>
+                    <h2 className="text-xl font-bold">Assinatura de quem acompanhou</h2>
                   </div>
                   <div className="space-y-3">
                     <div className="flex justify-between items-end">
-                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Assinatura do Responsável ({formData.responsible?.name} - CPF: {formData.responsible?.cpf})</label>
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Assinatura: {formData.witness?.name} ({formData.witness?.role})</label>
                       <button onClick={() => responsibleSigRef.current?.clear()} className="text-[10px] text-red-600 font-bold hover:underline">Limpar</button>
                     </div>
                     <div className="border-2 border-dashed border-stone-200 rounded-2xl bg-stone-50 overflow-hidden h-64">
@@ -1060,6 +1134,14 @@ export default function App() {
                         <p className="text-[10px] font-bold text-stone-400 uppercase">E-mail</p>
                         <p className="font-bold">{formData.responsible?.email}</p>
                       </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-stone-400 uppercase">Acompanhou a Vistoria</p>
+                        <p className="font-bold">{formData.witness?.name}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-stone-400 uppercase">Função</p>
+                        <p className="font-bold">{formData.witness?.role}</p>
+                      </div>
                       <div className="col-span-2">
                         <p className="text-[10px] font-bold text-stone-400 uppercase">Ocupação</p>
                         <p className="font-bold">{formData.company?.occupation?.join(', ') || 'Nenhuma selecionada'}</p>
@@ -1091,142 +1173,195 @@ export default function App() {
                   </div>
 
                   <div className="absolute top-0 left-0 -z-50 opacity-0 pointer-events-none overflow-hidden h-0">
-                    <div ref={pdfHeaderRef} className="w-[210mm] p-12 pb-0 font-sans text-black bg-white">
-                      <div className="flex justify-between items-center pb-6 mb-8 border-b-4 border-black">
+                    <div ref={pdfHeaderRef} className="w-[210mm] p-8 pb-0 font-sans text-black bg-white">
+                      <div className="flex justify-between items-center pb-4 mb-4 border-b-2 border-black">
                         <img 
                           src={`/api/proxy-image?url=${encodeURIComponent('https://www.bombeiros.ms.gov.br/wp-content/uploads/2015/01/Bras%C3%A3o_estilizado_tipo_texto._jpg.jpg')}`} 
-                          className="w-[100px] h-[100px] object-contain" 
+                          className="w-[80px] h-[80px] object-contain" 
                           alt="Logo CBMMS" 
                           crossOrigin="anonymous"
                         />
-                        <div className="text-center flex-1 px-6">
-                          <p className="text-[11.5px] font-black uppercase tracking-tighter text-black">Estado de Mato Grosso do Sul</p>
-                          <p className="text-[11.5px] font-bold uppercase text-black">Secretaria de Estado de Justiça e Segurança Pública</p>
-                          <p className="text-[19.5px] font-black uppercase mt-1 text-black">Corpo de Bombeiros Militar</p>
-                          <p className="text-[11.5px] font-bold text-black">3º SGBM / 2º GBM - Maracaju - MS</p>
+                        <div className="text-center flex-1 px-4">
+                          <p className="text-[12px] font-black uppercase text-black">ESTADO DE MATO GROSSO DO SUL</p>
+                          <p className="text-[11px] font-bold uppercase text-black">SECRETARIA DE ESTADO DE JUSTIÇA E SEGURANÇA PÚBLICA</p>
+                          <p className="text-[14px] font-black uppercase text-black">CORPO DE BOMBEIROS MILITAR</p>
+                          <p className="text-[11px] font-bold uppercase text-black">13º SUBGRUPAMENTO DE BOMBEIROS MILITAR INDEPENDENTE</p>
                         </div>
-                        <div className="w-20"></div>
+                        <img 
+                          src={`/api/proxy-image?url=${encodeURIComponent('https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Bras%C3%A3o_de_Mato_Grosso_do_Sul.svg/1200px-Bras%C3%A3o_de_Mato_Grosso_do_Sul.svg.png')}`} 
+                          className="w-[80px] h-[80px] object-contain" 
+                          alt="Brasão MS" 
+                          crossOrigin="anonymous"
+                        />
                       </div>
 
-                      <div className="flex justify-between items-stretch mb-8 rounded-lg overflow-hidden border border-black bg-white">
-                        <div className="flex-1 p-4 border-r border-black">
-                          <h1 className="text-[35.5px] font-black uppercase leading-none text-black">NOTIFICAÇÃO</h1>
-                          <p className="text-[13.5px] font-bold mt-1 text-black">EXIGÊNCIA DE VISTORIA TÉCNICA</p>
-                        </div>
-                        <div className="p-4 bg-white min-w-[220px] flex flex-col justify-center">
-                          <p className="text-[11.5px] font-black uppercase tracking-widest mb-1 text-black">Identificação</p>
-                          <p className="text-[13.5px] font-black text-black">PRE: {formData.preNumber}/PRE</p>
-                          <p className="text-[13.5px] font-black text-black">Nº NOTIFICAÇÃO: {formData.notificationNumber}</p>
-                          <div className="flex gap-4 mt-2 text-[11.5px] font-bold text-black">
-                            <span>{format(new Date(), "dd/MM/yyyy")}</span>
-                            <span>{format(new Date(), "HH:mm")}</span>
+                      <div className="flex flex-col items-center mb-4">
+                        <div className="border-2 border-black p-2 w-full text-center">
+                          <h1 className="text-[22px] font-black uppercase leading-none text-black">NOTIFICAÇÃO</h1>
+                          <p className="text-[16px] font-black mt-1 text-black">EXIGÊNCIA DE VISTORIA</p>
+                          <div className="mt-2 border-t border-black pt-1">
+                            <p className="text-[16px] font-black text-black">Nº {formData.notificationNumber} /13º SGBM/Ind 20{format(new Date(), "yy")}</p>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    <div ref={pdfBodyRef} className="w-[210mm] p-12 pt-0 font-sans text-black bg-white">
-                      <div className="space-y-6">
-                        <div id="pdf-section-data" className="rounded-xl border border-black overflow-hidden">
-                          <div className="text-white px-4 py-2 text-[11.5px] font-black uppercase tracking-widest bg-black">Dados da Edificação / Evento</div>
-                          <div className="p-4 grid grid-cols-2 gap-y-3 gap-x-6 text-[13.5px]">
-                            <div className="col-span-2 flex border-b border-[#f5f5f4] pb-1">
-                              <span className="font-black uppercase w-32 text-black">Razão Social:</span>
-                              <span className="font-bold text-black">{formData.company?.name}</span>
+                    <div ref={pdfBodyRef} className="w-[210mm] p-8 pt-0 font-sans text-black bg-white">
+                      <div className="space-y-4">
+                        <div id="pdf-section-data" className="text-[12px] border-t border-black pt-2">
+                          <div className="grid grid-cols-2 gap-y-1">
+                            <div className="flex border-b border-black pb-0.5">
+                              <span className="font-black uppercase w-16">PSCIP:</span>
+                              <span className="font-medium">{formData.company?.pscip}</span>
                             </div>
-                            <div className="flex border-b border-[#f5f5f4] pb-1">
-                              <span className="font-black uppercase w-32 text-black">CNPJ/CPF:</span>
-                              <span className="font-bold text-black">{formData.company?.cnpj}</span>
+                            <div className="flex border-b border-black pb-0.5 ml-4">
+                              <span className="font-black uppercase w-24">CNPJ/CPF:</span>
+                              <span className="font-medium">{formData.company?.cnpj}</span>
                             </div>
-                            <div className="flex border-b border-[#f5f5f4] pb-1">
-                              <span className="font-black uppercase w-32 text-black">Nº PSCIP:</span>
-                              <span className="font-bold text-black">{formData.company?.pscip}</span>
+                            <div className="col-span-2 flex border-b border-black pb-0.5">
+                              <span className="font-black uppercase w-32">Razão Social:</span>
+                              <span className="font-medium">{formData.company?.name}</span>
                             </div>
-                            <div className="flex border-b border-[#f5f5f4] pb-1">
-                              <span className="font-black uppercase w-32 text-black">Responsável:</span>
-                              <span className="font-bold text-black">{formData.responsible?.name}</span>
+                            <div className="col-span-2 flex border-b border-black pb-0.5">
+                              <span className="font-black uppercase w-56">Proprietário ou Responsável:</span>
+                              <span className="font-medium">{formData.responsible?.name}</span>
                             </div>
-                            <div className="flex border-b border-[#f5f5f4] pb-1">
-                              <span className="font-black uppercase w-32 text-black">Ocupação:</span>
-                              <span className="font-bold text-black">{formData.company?.occupation?.join(', ')}</span>
+                            <div className="col-span-2 flex border-b border-black pb-0.5">
+                              <span className="font-black uppercase w-56">Endereço da Edificação:</span>
+                              <span className="font-medium">{formData.company?.street}, {formData.company?.number}</span>
                             </div>
-                            <div className="col-span-2 flex border-b border-[#f5f5f4] pb-1">
-                              <span className="font-black uppercase w-32 text-black">Endereço:</span>
-                              <span className="font-bold text-black">{formData.company?.street}, {formData.company?.number} - {formData.company?.neighborhood}</span>
-                            </div>
-                            <div className="flex border-b border-[#f5f5f4] pb-1">
-                              <span className="font-black uppercase w-32 text-black">Telefone:</span>
-                              <span className="font-bold text-black">{formData.company?.phone}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div id="pdf-section-deadline" className="rounded-xl border-2 border-black p-5 bg-white">
-                          <h2 className="text-[13.5px] font-black uppercase mb-3 flex items-center gap-2 text-black">
-                            <AlertTriangle size={14} /> PRAZO PARA CUMPRIMENTO
-                          </h2>
-                          <div className="space-y-3 text-[13.5px] leading-relaxed text-black">
-                            <p>Em conformidade com a <strong>Lei Estadual nº 4.335/2013</strong>, Vossa Senhoria deverá cumprir as exigências listadas abaixo no prazo de <span className="text-black font-black underline decoration-2 underline-offset-4">{formData.deadlineDays} DIAS</span>, a contar da data de recebimento deste documento.</p>
-                            <p className="text-black font-bold">O prazo para cumprimento desta notificação se encerra em: {formData.date && formData.deadlineDays ? format(addDays(new Date(formData.date), formData.deadlineDays), "dd/MM/yyyy") : format(addDays(new Date(), 30), "dd/MM/yyyy")}</p>
-                            <p className="font-bold text-black">O não cumprimento desta notificação sujeita o infrator à multa, interdição ou outras penalidades previstas em Lei.</p>
-                            <p className="border-l-4 border-black pl-3 italic text-black">Vossa Senhoria fica cientificada de que, conforme o Art. 9º da Lei nº 4.335/2013, o local não pode funcionar sem o devido Alvará do Corpo de Bombeiros Militar do Mato Grosso do Sul.</p>
-                          </div>
-                        </div>
-
-                        <div id="pdf-section-irregularities" className="rounded-xl border border-black overflow-hidden">
-                          <div className="text-white px-4 py-2 text-[11.5px] font-black uppercase tracking-widest bg-black">Exigências Técnicas a Cumprir</div>
-                          <div className="p-6 space-y-1">
-                            {formData.irregularities?.map((i, idx) => (
-                              <div key={idx} className="pdf-irregularity-item flex gap-4 items-start border-b border-[#fafaf9] pb-1 last:border-0" style={{ lineHeight: '1.15' }}>
-                                <span className="flex items-center justify-center w-5 h-5 rounded-full font-black text-[11.5px] shrink-0 bg-[#f5f5f4] text-[#1c1917]">{idx + 1}</span>
-                                <span className="text-[13.5px] font-medium pt-0.5 text-[#292524]">{i}</span>
+                            <div className="col-span-2 grid grid-cols-3 gap-4 border-b border-black pb-0.5">
+                              <div className="flex">
+                                <span className="font-black uppercase w-16">Bairro:</span>
+                                <span className="font-medium">{formData.company?.neighborhood}</span>
                               </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div id="pdf-section-return" className="rounded-xl border border-black p-5 bg-white flex items-center gap-6">
-                          <div className="flex-1 space-y-2">
-                            <p className="text-[13.5px] leading-relaxed text-black font-medium">
-                              Ao cumprir todas as exigências desta notificação, acesse o site <span className="text-[#2563eb] font-bold underline">https://prevenir.bombeiros.ms.gov.br</span> aba <span className="font-bold">"ATENDIMENTO TÉCNICO"</span> e solicite o retorno de vistoria para esta edificação.
-                            </p>
-                          </div>
-                          <div className="shrink-0 bg-white p-2 rounded-lg border border-black shadow-sm">
-                            <QRCodeSVG 
-                              value="https://prevenir.bombeiros.ms.gov.br/"
-                              size={80}
-                              level="H"
-                              includeMargin={false}
-                            />
-                            <p className="text-[11.5px] text-center mt-1 font-bold text-black uppercase tracking-tighter">Acesse o Prevenir</p>
-                          </div>
-                        </div>
-
-                        <div id="pdf-section-signatures" className="mt-12 grid grid-cols-2 gap-12">
-                          <div className="text-center space-y-3">
-                            <div className="h-24 flex items-end justify-center border-b-2 border-black pb-2">
-                              {formData.signatures?.responsible && <img src={formData.signatures.responsible} className="max-h-full grayscale" alt="Assinatura Responsável" />}
-                            </div>
-                            <div>
-                              <p className="text-[13.5px] font-black uppercase text-black">{formData.responsible?.name}</p>
-                              <p className="text-[11.5px] font-bold uppercase text-black">CPF: {formData.responsible?.cpf}</p>
-                              <p className="text-[11.5px] font-bold uppercase tracking-widest text-black">Responsável pelo Local</p>
-                            </div>
-                          </div>
-                          <div className="space-y-8">
-                            {formData.inspectors?.map((inspector, index) => (
-                              <div key={index} className="text-center space-y-3">
-                                <div className="h-24 flex items-end justify-center border-b-2 border-black pb-2">
-                                  {formData.signatures?.inspectors?.[index] && <img src={formData.signatures.inspectors[index]} className="max-h-full grayscale" alt={`Assinatura Vistoriante ${index + 1}`} />}
-                                </div>
-                                <div>
-                                  <p className="text-[13.5px] font-black uppercase text-black">{inspector.rank} {inspector.name}</p>
-                                  <p className="text-[11.5px] font-bold uppercase text-black">Matrícula: {inspector.registration}</p>
-                                  <p className="text-[11.5px] font-bold uppercase tracking-widest text-black">Vistoriante do CBMMS</p>
-                                </div>
+                              <div className="flex">
+                                <span className="font-black uppercase w-16">Fone:</span>
+                                <span className="font-medium">{formData.company?.phone}</span>
                               </div>
-                            ))}
+                              <div className="flex">
+                                <span className="font-black uppercase w-16">Cidade:</span>
+                                <span className="font-medium">{formData.company?.city} /MS</span>
+                              </div>
+                            </div>
                           </div>
+                        </div>
+
+                        <div className="border-2 border-black p-2 text-[12px]">
+                          <p className="font-bold">Classificação da Edificação quanto à ocupação do local, de acordo com a Tabela 1 da Lei 4.335/2013: <span className="text-blue-700 font-black text-[14px] ml-2">{formData.company?.occupation?.[0]?.split(' ')[0]}</span></p>
+                        </div>
+
+                        <div className="text-[12px] leading-tight">
+                          <p>De conformidade com Lei 4.335/2013, V. Sª. deverá cumprir as exigências abaixo, no prazo de <span className="font-black text-[14px] text-blue-700 underline px-2">{formData.deadlineDays} {formData.deadlineDays === 1 ? 'DIA' : 'DIAS'}</span>, a contar da data do recebimento deste documento.</p>
+                        </div>
+
+                        <div id="pdf-section-irregularities" className="border border-black min-h-[300px]">
+                          <table className="w-full text-[12px] border-collapse">
+                            <tbody>
+                              {formData.irregularities?.map((i, idx) => (
+                                <tr key={idx} className="border-b border-black">
+                                  <td className="p-2 border-r border-black w-8 text-center font-bold">{idx + 1}</td>
+                                  <td className="p-2">{i}</td>
+                                </tr>
+                              ))}
+                              {/* Fill empty rows to match the look of the paper form */}
+                              {Array.from({ length: Math.max(0, 10 - (formData.irregularities?.length || 0)) }).map((_, idx) => (
+                                <tr key={`empty-${idx}`} className="border-b border-black h-8">
+                                  <td className="p-2 border-r border-black w-8"></td>
+                                  <td className="p-2"></td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        <div className="border-2 border-black p-2 text-[11px] text-center font-bold">
+                          <p>O não cumprimento desta notificação sujeita o infrator à multa, interdição ou outra penalidade cominada em Lei, podendo ser emitida notificação posterior se for identificada alguma exigência.</p>
+                        </div>
+
+                        <div className="text-[11px] italic border-t border-black pt-2 mt-4">
+                          <p>Esta notificação foi emitida no dia {format(new Date(), "dd/MM/yyyy")} às {format(new Date(), "HH:mm")}, sendo a pessoa abaixo assinada e identificada, ciente das suas responsabilidades.</p>
+                        </div>
+
+                        <div className="text-[12px] space-y-2 mt-4">
+                          <p className="font-black uppercase text-center border-b border-black pb-1">ACOMPANHOU A VISTORIA</p>
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="col-span-1 flex border-b border-black">
+                              <span className="font-black mr-2">Nome:</span>
+                              <span className="font-medium truncate">{formData.witness?.name}</span>
+                            </div>
+                            <div className="flex border-b border-black">
+                              <span className="font-black mr-2">RG:</span>
+                              <span className="font-medium">{formData.witness?.rg}</span>
+                            </div>
+                            <div className="flex border-b border-black">
+                              <span className="font-black mr-2">CPF:</span>
+                              <span className="font-medium">{formData.witness?.cpf}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-end gap-4 mt-2">
+                            <span className="font-black">Assinatura:</span>
+                            <div className="flex-1 border-b border-black h-12 flex items-center justify-center">
+                              {formData.signatures?.responsible && <img src={formData.signatures.responsible} className="max-h-full grayscale" alt="Assinatura" />}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-8 text-[11px] mt-4">
+                          <div className="flex flex-col">
+                            <div className="flex border-b border-black mb-2">
+                              <span className="font-black mr-2">Local:</span>
+                              <span className="font-medium">{formData.company?.city} - MS</span>
+                            </div>
+                            <div className="border border-black p-2 flex-1 grid grid-cols-2 gap-2">
+                              <div className="space-y-1">
+                                <p className="font-black">Fiscalizador</p>
+                                <p className="font-black">Posto/Grad.</p>
+                                <p className="font-black">Matr/Func</p>
+                              </div>
+                              <div className="space-y-1 text-center">
+                                {formData.inspectors?.[0] && (
+                                  <>
+                                    <div className="h-10 flex items-center justify-center border-b border-stone-200">
+                                      {formData.signatures?.inspectors?.[0] && <img src={formData.signatures.inspectors[0]} className="max-h-full grayscale" alt="Assinatura" />}
+                                    </div>
+                                    <p className="font-medium border-b border-stone-100">{formData.inspectors[0].rank}</p>
+                                    <p className="font-medium">{formData.inspectors[0].registration}</p>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col">
+                            <div className="flex border-b border-black mb-2">
+                              <span className="font-black mr-2">Data:</span>
+                              <span className="font-medium">{format(new Date(), "dd / MM / yyyy")}</span>
+                            </div>
+                            <div className="border border-black p-2 flex-1 grid grid-cols-2 gap-2">
+                              <div className="space-y-1">
+                                <p className="font-black">Fiscalizador</p>
+                                <p className="font-black">Posto/Grad.</p>
+                                <p className="font-black">Matr/Func</p>
+                              </div>
+                              <div className="space-y-1 text-center">
+                                {formData.inspectors?.[1] && (
+                                  <>
+                                    <div className="h-10 flex items-center justify-center border-b border-stone-200">
+                                      {formData.signatures?.inspectors?.[1] && <img src={formData.signatures.inspectors[1]} className="max-h-full grayscale" alt="Assinatura" />}
+                                    </div>
+                                    <p className="font-medium border-b border-stone-100">{formData.inspectors[1].rank}</p>
+                                    <p className="font-medium">{formData.inspectors[1].registration}</p>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="text-[9px] text-center mt-4 border-t border-stone-200 pt-2 space-y-0.5">
+                          <p className="font-bold">Rua Appa, 21 - Vila do Prata - CEP 79150-000 - Fone: (67) 3454-4141</p>
+                          <p>Horário de expediente administrativo: de 2ª à 6ª feira - das 7h30 às 12h00 e das 14h00 às 17h30</p>
+                          <p>E-mail: maracaju.sal@cbm.ms.gov.br</p>
                         </div>
                       </div>
                     </div>
