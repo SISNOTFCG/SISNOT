@@ -193,11 +193,6 @@ export default function App() {
 
       const addHeaderAndPageNumber = (pageNum: number) => {
         pdf.addImage(headerImgData, 'PNG', 0, 0, headerWidth, headerHeight);
-        
-        // Add red borders to the page
-        pdf.setDrawColor(185, 28, 28); // CBMMS Red
-        pdf.setLineWidth(1.5);
-        pdf.rect(2, 2, pageWidth - 4, pageHeight - 4);
       };
 
       // Helper to add a section to the PDF
