@@ -193,6 +193,11 @@ export default function App() {
 
       const addHeaderAndPageNumber = (pageNum: number) => {
         pdf.addImage(headerImgData, 'PNG', 0, 0, headerWidth, headerHeight);
+        
+        // Add red borders to the page
+        pdf.setDrawColor(185, 28, 28); // CBMMS Red
+        pdf.setLineWidth(1.5);
+        pdf.rect(2, 2, pageWidth - 4, pageHeight - 4);
       };
 
       // Helper to add a section to the PDF
@@ -920,33 +925,33 @@ export default function App() {
                   </div>
 
                   <div className="fixed left-[-9999px] top-0">
-                    <div ref={pdfHeaderRef} className="w-[210mm] p-12 pb-0 font-sans text-stone-900 bg-white">
-                      <div className="flex justify-between items-center pb-6 mb-8 border-b-4 border-stone-900">
+                    <div ref={pdfHeaderRef} className="w-[210mm] p-12 pb-0 font-sans text-black bg-white">
+                      <div className="flex justify-between items-center pb-6 mb-8 border-b-4 border-black">
                         <img 
-                          src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bras%C3%A3o_do_Corpo_de_Bombeiros_Militar_do_Estado_do_Mato_Grosso_do_Sul.png/512px-Bras%C3%A3o_do_Corpo_de_Bombeiros_Militar_do_Estado_do_Mato_Grosso_do_Sul.png" 
-                          className="w-20 h-20 object-contain" 
+                          src="https://www.bombeiros.ms.gov.br/wp-content/uploads/2015/01/Bras%C3%A3o_estilizado_tipo_texto._jpg.jpg" 
+                          className="w-32 h-20 object-contain" 
                           alt="Logo CBMMS" 
                           referrerPolicy="no-referrer"
                         />
                         <div className="text-center flex-1 px-6">
-                          <p className="text-xs font-black uppercase tracking-tighter text-stone-900">Estado de Mato Grosso do Sul</p>
-                          <p className="text-[10px] font-bold uppercase text-stone-600">Secretaria de Estado de Justiça e Segurança Pública</p>
-                          <p className="text-lg font-black uppercase mt-1 text-stone-900">Corpo de Bombeiros Militar</p>
-                          <p className="text-[10px] font-bold text-stone-500">3º SGBM / 2º GBM - Maracaju - MS</p>
+                          <p className="text-xs font-black uppercase tracking-tighter text-black">Estado de Mato Grosso do Sul</p>
+                          <p className="text-[10px] font-bold uppercase text-black">Secretaria de Estado de Justiça e Segurança Pública</p>
+                          <p className="text-lg font-black uppercase mt-1 text-black">Corpo de Bombeiros Militar</p>
+                          <p className="text-[10px] font-bold text-black">3º SGBM / 2º GBM - Maracaju - MS</p>
                         </div>
                         <div className="w-20"></div>
                       </div>
 
-                      <div className="flex justify-between items-stretch mb-8 rounded-lg overflow-hidden border border-stone-200 bg-stone-50">
-                        <div className="flex-1 p-4 border-r border-stone-200">
-                          <h1 className="text-3xl font-black uppercase leading-none text-stone-900">NOTIFICAÇÃO</h1>
-                          <p className="text-xs font-bold mt-1 text-stone-500">EXIGÊNCIA DE VISTORIA TÉCNICA</p>
+                      <div className="flex justify-between items-stretch mb-8 rounded-lg overflow-hidden border border-black bg-white">
+                        <div className="flex-1 p-4 border-r border-black">
+                          <h1 className="text-3xl font-black uppercase leading-none text-black">NOTIFICAÇÃO</h1>
+                          <p className="text-xs font-bold mt-1 text-black">EXIGÊNCIA DE VISTORIA TÉCNICA</p>
                         </div>
                         <div className="p-4 bg-white min-w-[220px] flex flex-col justify-center">
-                          <p className="text-[10px] font-black uppercase tracking-widest mb-1 text-stone-400">Identificação</p>
-                          <p className="text-xs font-black text-stone-900">PRE: {formData.preNumber}/PRE</p>
-                          <p className="text-xs font-black text-stone-900">NOT. NOTIFICAÇÃO: {formData.notificationNumber}</p>
-                          <div className="flex gap-4 mt-2 text-[10px] font-bold text-stone-500">
+                          <p className="text-[10px] font-black uppercase tracking-widest mb-1 text-black">Identificação</p>
+                          <p className="text-xs font-black text-black">PRE: {formData.preNumber}/PRE</p>
+                          <p className="text-xs font-black text-black">NOT. NOTIFICAÇÃO: {formData.notificationNumber}</p>
+                          <div className="flex gap-4 mt-2 text-[10px] font-bold text-black">
                             <span>{format(new Date(), "dd/MM/yyyy")}</span>
                             <span>{format(new Date(), "HH:mm")}</span>
                           </div>
@@ -954,56 +959,56 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div ref={pdfBodyRef} className="w-[210mm] p-12 pt-0 font-sans text-stone-900 bg-white">
+                    <div ref={pdfBodyRef} className="w-[210mm] p-12 pt-0 font-sans text-black bg-white">
                       <div className="space-y-6">
-                        <div id="pdf-section-data" className="rounded-xl border border-stone-200 overflow-hidden">
-                          <div className="text-white px-4 py-2 text-[10px] font-black uppercase tracking-widest bg-stone-800">Dados da Edificação / Evento</div>
+                        <div id="pdf-section-data" className="rounded-xl border border-black overflow-hidden">
+                          <div className="text-white px-4 py-2 text-[10px] font-black uppercase tracking-widest bg-black">Dados da Edificação / Evento</div>
                           <div className="p-4 grid grid-cols-2 gap-y-3 gap-x-6 text-[11px]">
                             <div className="col-span-2 flex border-b border-stone-100 pb-1">
-                              <span className="font-black uppercase w-32 text-stone-400">Razão Social:</span>
-                              <span className="font-bold text-stone-800">{formData.company?.name}</span>
+                              <span className="font-black uppercase w-32 text-black">Razão Social:</span>
+                              <span className="font-bold text-black">{formData.company?.name}</span>
                             </div>
                             <div className="flex border-b border-stone-100 pb-1">
-                              <span className="font-black uppercase w-32 text-stone-400">CNPJ/CPF:</span>
-                              <span className="font-bold text-stone-800">{formData.company?.cnpj}</span>
+                              <span className="font-black uppercase w-32 text-black">CNPJ/CPF:</span>
+                              <span className="font-bold text-black">{formData.company?.cnpj}</span>
                             </div>
                             <div className="flex border-b border-stone-100 pb-1">
-                              <span className="font-black uppercase w-32 text-stone-400">Nº PSCIP:</span>
-                              <span className="font-bold text-stone-800">{formData.company?.pscip}</span>
+                              <span className="font-black uppercase w-32 text-black">Nº PSCIP:</span>
+                              <span className="font-bold text-black">{formData.company?.pscip}</span>
                             </div>
                             <div className="flex border-b border-stone-100 pb-1">
-                              <span className="font-black uppercase w-32 text-stone-400">Responsável:</span>
-                              <span className="font-bold text-stone-800">{formData.responsible?.name}</span>
+                              <span className="font-black uppercase w-32 text-black">Responsável:</span>
+                              <span className="font-bold text-black">{formData.responsible?.name}</span>
                             </div>
                             <div className="flex border-b border-stone-100 pb-1">
-                              <span className="font-black uppercase w-32 text-stone-400">Ocupação:</span>
-                              <span className="font-bold text-stone-800">{formData.company?.occupation?.join(', ')}</span>
+                              <span className="font-black uppercase w-32 text-black">Ocupação:</span>
+                              <span className="font-bold text-black">{formData.company?.occupation?.join(', ')}</span>
                             </div>
                             <div className="col-span-2 flex border-b border-stone-100 pb-1">
-                              <span className="font-black uppercase w-32 text-stone-400">Endereço:</span>
-                              <span className="font-bold text-stone-800">{formData.company?.street}, {formData.company?.number} - {formData.company?.neighborhood}</span>
+                              <span className="font-black uppercase w-32 text-black">Endereço:</span>
+                              <span className="font-bold text-black">{formData.company?.street}, {formData.company?.number} - {formData.company?.neighborhood}</span>
                             </div>
                             <div className="flex border-b border-stone-100 pb-1">
-                              <span className="font-black uppercase w-32 text-stone-400">Telefone:</span>
-                              <span className="font-bold text-stone-800">{formData.company?.phone}</span>
+                              <span className="font-black uppercase w-32 text-black">Telefone:</span>
+                              <span className="font-bold text-black">{formData.company?.phone}</span>
                             </div>
                           </div>
                         </div>
 
-                        <div id="pdf-section-deadline" className="rounded-xl border-2 border-stone-200 p-5 bg-white">
-                          <h2 className="text-xs font-black uppercase mb-3 flex items-center gap-2 text-stone-900">
+                        <div id="pdf-section-deadline" className="rounded-xl border-2 border-black p-5 bg-white">
+                          <h2 className="text-xs font-black uppercase mb-3 flex items-center gap-2 text-black">
                             <AlertTriangle size={14} /> PRAZO PARA CUMPRIMENTO
                           </h2>
-                          <div className="space-y-3 text-[11px] leading-relaxed text-stone-700">
-                            <p>Em conformidade com a <strong>Lei Estadual nº 4.335/2013</strong>, Vossa Senhoria deverá cumprir as exigências listadas abaixo no prazo de <span className="text-stone-900 font-black underline decoration-2 underline-offset-4">{formData.deadlineDays} DIAS</span>, a contar da data de recebimento deste documento.</p>
-                            <p className="text-stone-900 font-bold">O prazo para cumprimento desta notificação se encerra em: {formData.date && formData.deadlineDays ? format(addDays(new Date(formData.date), formData.deadlineDays), "dd/MM/yyyy") : format(addDays(new Date(), 30), "dd/MM/yyyy")}</p>
-                            <p className="font-bold text-stone-900">O não cumprimento desta notificação sujeita o infrator à multa, interdição ou outras penalidades previstas em Lei.</p>
-                            <p className="border-l-4 border-stone-900 pl-3 italic text-stone-500">Vossa Senhoria fica cientificada de que, conforme o Art. 9º da Lei nº 4.335/2013, o local não pode funcionar sem o devido Alvará do Corpo de Bombeiros Militar do Mato Grosso do Sul.</p>
+                          <div className="space-y-3 text-[11px] leading-relaxed text-black">
+                            <p>Em conformidade com a <strong>Lei Estadual nº 4.335/2013</strong>, Vossa Senhoria deverá cumprir as exigências listadas abaixo no prazo de <span className="text-black font-black underline decoration-2 underline-offset-4">{formData.deadlineDays} DIAS</span>, a contar da data de recebimento deste documento.</p>
+                            <p className="text-black font-bold">O prazo para cumprimento desta notificação se encerra em: {formData.date && formData.deadlineDays ? format(addDays(new Date(formData.date), formData.deadlineDays), "dd/MM/yyyy") : format(addDays(new Date(), 30), "dd/MM/yyyy")}</p>
+                            <p className="font-bold text-black">O não cumprimento desta notificação sujeita o infrator à multa, interdição ou outras penalidades previstas em Lei.</p>
+                            <p className="border-l-4 border-black pl-3 italic text-black">Vossa Senhoria fica cientificada de que, conforme o Art. 9º da Lei nº 4.335/2013, o local não pode funcionar sem o devido Alvará do Corpo de Bombeiros Militar do Mato Grosso do Sul.</p>
                           </div>
                         </div>
 
-                        <div id="pdf-section-irregularities" className="rounded-xl border border-stone-200 overflow-hidden">
-                          <div className="text-white px-4 py-2 text-[10px] font-black uppercase tracking-widest bg-stone-800">Exigências Técnicas a Cumprir</div>
+                        <div id="pdf-section-irregularities" className="rounded-xl border border-black overflow-hidden">
+                          <div className="text-white px-4 py-2 text-[10px] font-black uppercase tracking-widest bg-black">Exigências Técnicas a Cumprir</div>
                           <div className="p-6 space-y-1">
                             {formData.irregularities?.map((i, idx) => (
                               <div key={idx} className="pdf-irregularity-item flex gap-4 items-start border-b border-stone-50 pb-1 last:border-0" style={{ lineHeight: '1.15' }}>
@@ -1014,44 +1019,44 @@ export default function App() {
                           </div>
                         </div>
 
-                        <div id="pdf-section-return" className="rounded-xl border border-stone-200 p-5 bg-stone-50 flex items-center gap-6">
+                        <div id="pdf-section-return" className="rounded-xl border border-black p-5 bg-white flex items-center gap-6">
                           <div className="flex-1 space-y-2">
-                            <p className="text-[11px] leading-relaxed text-stone-700 font-medium">
-                              Ao cumprir todas as exigências desta notificação, acesse o site <span className="text-red-600 font-bold">https://prevenir.bombeiros.ms.gov.br</span> aba <span className="font-bold">"ATENDIMENTO TÉCNICO"</span> e solicite o retorno de vistoria para esta edificação.
+                            <p className="text-[11px] leading-relaxed text-black font-medium">
+                              Ao cumprir todas as exigências desta notificação, acesse o site <span className="text-black font-bold underline">https://prevenir.bombeiros.ms.gov.br</span> aba <span className="font-bold">"ATENDIMENTO TÉCNICO"</span> e solicite o retorno de vistoria para esta edificação.
                             </p>
                           </div>
-                          <div className="shrink-0 bg-white p-2 rounded-lg border border-stone-200 shadow-sm">
+                          <div className="shrink-0 bg-white p-2 rounded-lg border border-black shadow-sm">
                             <QRCodeSVG 
                               value="https://prevenir.bombeiros.ms.gov.br/"
                               size={80}
                               level="H"
                               includeMargin={false}
                             />
-                            <p className="text-[8px] text-center mt-1 font-bold text-stone-400 uppercase tracking-tighter">Acesse o Prevenir</p>
+                            <p className="text-[8px] text-center mt-1 font-bold text-black uppercase tracking-tighter">Acesse o Prevenir</p>
                           </div>
                         </div>
 
                         <div id="pdf-section-signatures" className="mt-12 grid grid-cols-2 gap-12">
                           <div className="text-center space-y-3">
-                            <div className="h-24 flex items-end justify-center border-b-2 border-stone-200 pb-2">
+                            <div className="h-24 flex items-end justify-center border-b-2 border-black pb-2">
                               {formData.signatures?.responsible && <img src={formData.signatures.responsible} className="max-h-full grayscale" alt="Assinatura Responsável" />}
                             </div>
                             <div>
-                              <p className="text-[11px] font-black uppercase text-stone-800">{formData.responsible?.name}</p>
-                              <p className="text-[9px] font-bold uppercase text-stone-600">CPF: {formData.responsible?.cpf}</p>
-                              <p className="text-[9px] font-bold uppercase tracking-widest text-stone-400">Responsável pelo Local</p>
+                              <p className="text-[11px] font-black uppercase text-black">{formData.responsible?.name}</p>
+                              <p className="text-[9px] font-bold uppercase text-black">CPF: {formData.responsible?.cpf}</p>
+                              <p className="text-[9px] font-bold uppercase tracking-widest text-black">Responsável pelo Local</p>
                             </div>
                           </div>
                           <div className="space-y-8">
                             {formData.inspectors?.map((inspector, index) => (
                               <div key={index} className="text-center space-y-3">
-                                <div className="h-24 flex items-end justify-center border-b-2 border-stone-200 pb-2">
+                                <div className="h-24 flex items-end justify-center border-b-2 border-black pb-2">
                                   {formData.signatures?.inspectors?.[index] && <img src={formData.signatures.inspectors[index]} className="max-h-full grayscale" alt={`Assinatura Vistoriante ${index + 1}`} />}
                                 </div>
                                 <div>
-                                  <p className="text-[11px] font-black uppercase text-stone-800">{inspector.rank} {inspector.name}</p>
-                                  <p className="text-[9px] font-bold uppercase text-stone-600">Matrícula: {inspector.registration}</p>
-                                  <p className="text-[9px] font-bold uppercase tracking-widest text-stone-400">Vistoriante do CBMMS</p>
+                                  <p className="text-[11px] font-black uppercase text-black">{inspector.rank} {inspector.name}</p>
+                                  <p className="text-[9px] font-bold uppercase text-black">Matrícula: {inspector.registration}</p>
+                                  <p className="text-[9px] font-bold uppercase tracking-widest text-black">Vistoriante do CBMMS</p>
                                 </div>
                               </div>
                             ))}
