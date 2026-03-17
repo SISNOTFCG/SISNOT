@@ -245,7 +245,7 @@ export default function App() {
     setIsSubmitting(true);
     try {
       // Small delay to ensure images are loaded
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = 210;
@@ -255,16 +255,33 @@ export default function App() {
       
       console.log('Capturing header...');
       // 1. Capture Header
-      const headerCanvas = await html2canvas(pdfHeaderRef.current, {
-        scale: 1.5,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        logging: true
-      });
-      const headerImgData = headerCanvas.toDataURL('image/png');
+      let headerImgData = '';
+      let headerHeight = 0;
       const headerWidth = pageWidth;
-      const headerHeight = (headerCanvas.height * headerWidth) / headerCanvas.width;
+
+      try {
+        const headerCanvas = await html2canvas(pdfHeaderRef.current, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          onclone: (clonedDoc) => {
+            // Ensure the container is visible in the clone
+            const container = clonedDoc.querySelector('.fixed.top-0.left-\\[-9999px\\]') as HTMLElement;
+            if (container) {
+              container.style.left = '0';
+              container.style.opacity = '1';
+              container.style.visibility = 'visible';
+            }
+          }
+        });
+        headerImgData = headerCanvas.toDataURL('image/png');
+        headerHeight = (headerCanvas.height * headerWidth) / headerCanvas.width;
+      } catch (headerErr) {
+        console.error('Error capturing header:', headerErr);
+        // Fallback or rethrow
+        throw headerErr;
+      }
       
       let currentY = headerHeight;
       let currentPage = 1;
@@ -282,25 +299,43 @@ export default function App() {
           return;
         }
         
-        const canvas = await html2canvas(element, { 
-          scale: 1.5, 
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#ffffff',
-          logging: false
-        });
-        const imgWidth = pageWidth - (sidePadding * 2);
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        
-        if (currentY + imgHeight > pageHeight - bottomMargin) {
-          pdf.addPage();
-          currentPage++;
-          currentY = headerHeight;
-          addHeaderAndPageNumber(currentPage);
+        try {
+          const canvas = await html2canvas(element, { 
+            scale: 2, // Higher scale for better quality
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            logging: false,
+            onclone: (clonedDoc) => {
+              const container = clonedDoc.querySelector('.fixed.top-0.left-\\[-9999px\\]') as HTMLElement;
+              if (container) {
+                container.style.left = '0';
+                container.style.opacity = '1';
+                container.style.visibility = 'visible';
+              }
+              const clonedElement = clonedDoc.getElementById(elementId);
+              if (clonedElement) {
+                clonedElement.style.opacity = '1';
+                clonedElement.style.visibility = 'visible';
+                clonedElement.style.display = 'block';
+              }
+            }
+          });
+          const imgWidth = pageWidth - (sidePadding * 2);
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          
+          if (currentY + imgHeight > pageHeight - bottomMargin) {
+            pdf.addPage();
+            currentPage++;
+            currentY = headerHeight;
+            addHeaderAndPageNumber(currentPage);
+          }
+          
+          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', sidePadding, currentY, imgWidth, imgHeight);
+          currentY += imgHeight + 6; // Spacing between sections
+        } catch (err) {
+          console.error(`Error capturing section ${elementId}:`, err);
+          throw err;
         }
-        
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', sidePadding, currentY, imgWidth, imgHeight);
-        currentY += imgHeight + 6; // Spacing between sections
       };
 
       // Initial page setup
@@ -1102,26 +1137,20 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="absolute top-0 left-0 -z-50 opacity-0 pointer-events-none overflow-hidden h-0">
+                  <div className="fixed top-0 left-[-9999px] pointer-events-none bg-white" style={{ width: '210mm' }}>
                     <div ref={pdfHeaderRef} className="w-[210mm] p-8 pb-0 font-sans text-black bg-white">
                       <div className="flex justify-between items-center pb-4 mb-4 border-b-2 border-black">
-                        <img 
-                          src={`/api/proxy-image?url=${encodeURIComponent('https://www.bombeiros.ms.gov.br/wp-content/uploads/2015/01/Bras%C3%A3o_estilizado_tipo_texto._jpg.jpg')}`} 
-                          className="w-[80px] h-[80px] object-contain" 
-                          alt="Logo CBMMS" 
-                          crossOrigin="anonymous"
-                        />
+                        <div className="w-[80px] h-[80px] flex items-center justify-center border border-stone-200">
+                          <span className="text-[10px] text-stone-400">LOGO</span>
+                        </div>
                         <div className="text-center flex-1 px-4">
                           <p className="text-[12px] font-black uppercase text-black">ESTADO DE MATO GROSSO DO SUL</p>
                           <p className="text-[11px] font-bold uppercase text-black">SECRETARIA DE ESTADO DE JUSTIÇA E SEGURANÇA PÚBLICA</p>
                           <p className="text-[14px] font-black uppercase text-black">CORPO DE BOMBEIROS MILITAR</p>
                         </div>
-                        <img 
-                          src={`/api/proxy-image?url=${encodeURIComponent('https://upload.wikimedia.org/wikipedia/commons/thumb/d/db/Bras%C3%A3o_de_Mato_Grosso_do_Sul.svg/1200px-Bras%C3%A3o_de_Mato_Grosso_do_Sul.svg.png')}`} 
-                          className="w-[80px] h-[80px] object-contain" 
-                          alt="Brasão MS" 
-                          crossOrigin="anonymous"
-                        />
+                        <div className="w-[80px] h-[80px] flex items-center justify-center border border-stone-200">
+                          <span className="text-[10px] text-stone-400">BRASÃO</span>
+                        </div>
                       </div>
 
                       <div className="flex flex-col items-center mb-4">
