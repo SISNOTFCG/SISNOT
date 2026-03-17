@@ -201,9 +201,10 @@ export default function App() {
         if (!element) return;
         
         const canvas = await html2canvas(element, { 
-          scale: 2, 
+          scale: 1.5, 
           useCORS: true,
-          backgroundColor: '#ffffff'
+          backgroundColor: '#ffffff',
+          logging: false
         });
         const imgWidth = pageWidth - (sidePadding * 2);
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
@@ -225,9 +226,13 @@ export default function App() {
         if (!container) return;
 
         // Add the title of the section first
-        const titleElement = container.querySelector('.bg-stone-800');
+        const titleElement = container.querySelector('.bg-black');
         if (titleElement) {
-          const canvas = await html2canvas(titleElement as HTMLElement, { scale: 2, backgroundColor: '#ffffff' });
+          const canvas = await html2canvas(titleElement as HTMLElement, { 
+            scale: 1.5, 
+            backgroundColor: '#ffffff',
+            useCORS: true
+          });
           const imgWidth = pageWidth - (sidePadding * 2);
           const imgHeight = (canvas.height * imgWidth) / canvas.width;
           
@@ -243,7 +248,11 @@ export default function App() {
 
         const items = container.querySelectorAll('.pdf-irregularity-item');
         for (const item of Array.from(items)) {
-          const canvas = await html2canvas(item as HTMLElement, { scale: 2, backgroundColor: '#ffffff' });
+          const canvas = await html2canvas(item as HTMLElement, { 
+            scale: 1.5, 
+            backgroundColor: '#ffffff',
+            useCORS: true
+          });
           const imgWidth = pageWidth - (sidePadding * 2);
           const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
@@ -300,6 +309,7 @@ export default function App() {
         }
       }
       
+      console.log('PDF generated successfully. Saving and sending...');
       const pdfBase64 = pdf.output('datauristring').split(',')[1];
       
       // Save locally for the user
@@ -308,7 +318,8 @@ export default function App() {
       
       // Send to server for Email and SMS delivery
       try {
-        await fetch('/api/send-pdf', {
+        console.log('Sending PDF to server...');
+        const response = await fetch('/api/send-pdf', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -318,6 +329,11 @@ export default function App() {
             preNumber: formData.preNumber
           })
         });
+        if (!response.ok) {
+          console.error('Server responded with error:', response.statusText);
+        } else {
+          console.log('PDF sent to server successfully');
+        }
       } catch (apiError) {
         console.error('Error sending PDF to server:', apiError);
       }
@@ -326,6 +342,7 @@ export default function App() {
       setIsSuccess(true);
     } catch (error) {
       console.error('Error generating PDF:', error);
+      alert('Ocorreu um erro ao gerar o PDF. Verifique os dados e tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -929,24 +946,24 @@ export default function App() {
                           referrerPolicy="no-referrer"
                         />
                         <div className="text-center flex-1 px-6">
-                          <p className="text-[11px] font-black uppercase tracking-tighter text-black">Estado de Mato Grosso do Sul</p>
-                          <p className="text-[11px] font-bold uppercase text-black">Secretaria de Estado de Justiça e Segurança Pública</p>
-                          <p className="text-[19px] font-black uppercase mt-1 text-black">Corpo de Bombeiros Militar</p>
-                          <p className="text-[11px] font-bold text-black">3º SGBM / 2º GBM - Maracaju - MS</p>
+                          <p className="text-xs font-black uppercase tracking-tighter text-black">Estado de Mato Grosso do Sul</p>
+                          <p className="text-xs font-bold uppercase text-black">Secretaria de Estado de Justiça e Segurança Pública</p>
+                          <p className="text-xl font-black uppercase mt-1 text-black">Corpo de Bombeiros Militar</p>
+                          <p className="text-xs font-bold text-black">3º SGBM / 2º GBM - Maracaju - MS</p>
                         </div>
                         <div className="w-20"></div>
                       </div>
 
                       <div className="flex justify-between items-stretch mb-8 rounded-lg overflow-hidden border border-black bg-white">
                         <div className="flex-1 p-4 border-r border-black">
-                          <h1 className="text-[31px] font-black uppercase leading-none text-black">NOTIFICAÇÃO</h1>
-                          <p className="text-[13px] font-bold mt-1 text-black">EXIGÊNCIA DE VISTORIA TÉCNICA</p>
+                          <h1 className="text-4xl font-black uppercase leading-none text-black">NOTIFICAÇÃO</h1>
+                          <p className="text-sm font-bold mt-1 text-black">EXIGÊNCIA DE VISTORIA TÉCNICA</p>
                         </div>
                         <div className="p-4 bg-white min-w-[220px] flex flex-col justify-center">
-                          <p className="text-[11px] font-black uppercase tracking-widest mb-1 text-black">Identificação</p>
-                          <p className="text-[13px] font-black text-black">PRE: {formData.preNumber}/PRE</p>
-                          <p className="text-[13px] font-black text-black">Nº NOTIFICAÇÃO: {formData.notificationNumber}</p>
-                          <div className="flex gap-4 mt-2 text-[11px] font-bold text-black">
+                          <p className="text-xs font-black uppercase tracking-widest mb-1 text-black">Identificação</p>
+                          <p className="text-sm font-black text-black">PRE: {formData.preNumber}/PRE</p>
+                          <p className="text-sm font-black text-black">Nº NOTIFICAÇÃO: {formData.notificationNumber}</p>
+                          <div className="flex gap-4 mt-2 text-xs font-bold text-black">
                             <span>{format(new Date(), "dd/MM/yyyy")}</span>
                             <span>{format(new Date(), "HH:mm")}</span>
                           </div>
@@ -957,8 +974,8 @@ export default function App() {
                     <div ref={pdfBodyRef} className="w-[210mm] p-12 pt-0 font-sans text-black bg-white">
                       <div className="space-y-6">
                         <div id="pdf-section-data" className="rounded-xl border border-black overflow-hidden">
-                          <div className="text-white px-4 py-2 text-[11px] font-black uppercase tracking-widest bg-black">Dados da Edificação / Evento</div>
-                          <div className="p-4 grid grid-cols-2 gap-y-3 gap-x-6 text-[12px]">
+                          <div className="text-white px-4 py-2 text-xs font-black uppercase tracking-widest bg-black">Dados da Edificação / Evento</div>
+                          <div className="p-4 grid grid-cols-2 gap-y-3 gap-x-6 text-sm">
                             <div className="col-span-2 flex border-b border-stone-100 pb-1">
                               <span className="font-black uppercase w-32 text-black">Razão Social:</span>
                               <span className="font-bold text-black">{formData.company?.name}</span>
@@ -991,10 +1008,10 @@ export default function App() {
                         </div>
 
                         <div id="pdf-section-deadline" className="rounded-xl border-2 border-black p-5 bg-white">
-                          <h2 className="text-[13px] font-black uppercase mb-3 flex items-center gap-2 text-black">
+                          <h2 className="text-sm font-black uppercase mb-3 flex items-center gap-2 text-black">
                             <AlertTriangle size={14} /> PRAZO PARA CUMPRIMENTO
                           </h2>
-                          <div className="space-y-3 text-[12px] leading-relaxed text-black">
+                          <div className="space-y-3 text-sm leading-relaxed text-black">
                             <p>Em conformidade com a <strong>Lei Estadual nº 4.335/2013</strong>, Vossa Senhoria deverá cumprir as exigências listadas abaixo no prazo de <span className="text-black font-black underline decoration-2 underline-offset-4">{formData.deadlineDays} DIAS</span>, a contar da data de recebimento deste documento.</p>
                             <p className="text-black font-bold">O prazo para cumprimento desta notificação se encerra em: {formData.date && formData.deadlineDays ? format(addDays(new Date(formData.date), formData.deadlineDays), "dd/MM/yyyy") : format(addDays(new Date(), 30), "dd/MM/yyyy")}</p>
                             <p className="font-bold text-black">O não cumprimento desta notificação sujeita o infrator à multa, interdição ou outras penalidades previstas em Lei.</p>
@@ -1003,12 +1020,12 @@ export default function App() {
                         </div>
 
                         <div id="pdf-section-irregularities" className="rounded-xl border border-black overflow-hidden">
-                          <div className="text-white px-4 py-2 text-[11px] font-black uppercase tracking-widest bg-black">Exigências Técnicas a Cumprir</div>
+                          <div className="text-white px-4 py-2 text-xs font-black uppercase tracking-widest bg-black">Exigências Técnicas a Cumprir</div>
                           <div className="p-6 space-y-1">
                             {formData.irregularities?.map((i, idx) => (
                               <div key={idx} className="pdf-irregularity-item flex gap-4 items-start border-b border-stone-50 pb-1 last:border-0" style={{ lineHeight: '1.15' }}>
-                                <span className="flex items-center justify-center w-5 h-5 rounded-full font-black text-[10px] shrink-0 bg-stone-100 text-stone-900">{idx + 1}</span>
-                                <span className="text-[12px] font-medium pt-0.5 text-stone-800">{i}</span>
+                                <span className="flex items-center justify-center w-5 h-5 rounded-full font-black text-xs shrink-0 bg-stone-100 text-stone-900">{idx + 1}</span>
+                                <span className="text-sm font-medium pt-0.5 text-stone-800">{i}</span>
                               </div>
                             ))}
                           </div>
@@ -1016,7 +1033,7 @@ export default function App() {
 
                         <div id="pdf-section-return" className="rounded-xl border border-black p-5 bg-white flex items-center gap-6">
                           <div className="flex-1 space-y-2">
-                            <p className="text-[12px] leading-relaxed text-black font-medium">
+                            <p className="text-sm leading-relaxed text-black font-medium">
                               Ao cumprir todas as exigências desta notificação, acesse o site <span className="text-blue-600 font-bold underline">https://prevenir.bombeiros.ms.gov.br</span> aba <span className="font-bold">"ATENDIMENTO TÉCNICO"</span> e solicite o retorno de vistoria para esta edificação.
                             </p>
                           </div>
@@ -1027,7 +1044,7 @@ export default function App() {
                               level="H"
                               includeMargin={false}
                             />
-                            <p className="text-[9px] text-center mt-1 font-bold text-black uppercase tracking-tighter">Acesse o Prevenir</p>
+                            <p className="text-xs text-center mt-1 font-bold text-black uppercase tracking-tighter">Acesse o Prevenir</p>
                           </div>
                         </div>
 
@@ -1037,9 +1054,9 @@ export default function App() {
                               {formData.signatures?.responsible && <img src={formData.signatures.responsible} className="max-h-full grayscale" alt="Assinatura Responsável" />}
                             </div>
                             <div>
-                              <p className="text-[12px] font-black uppercase text-black">{formData.responsible?.name}</p>
-                              <p className="text-[10px] font-bold uppercase text-black">CPF: {formData.responsible?.cpf}</p>
-                              <p className="text-[10px] font-bold uppercase tracking-widest text-black">Responsável pelo Local</p>
+                              <p className="text-sm font-black uppercase text-black">{formData.responsible?.name}</p>
+                              <p className="text-xs font-bold uppercase text-black">CPF: {formData.responsible?.cpf}</p>
+                              <p className="text-xs font-bold uppercase tracking-widest text-black">Responsável pelo Local</p>
                             </div>
                           </div>
                           <div className="space-y-8">
@@ -1049,9 +1066,9 @@ export default function App() {
                                   {formData.signatures?.inspectors?.[index] && <img src={formData.signatures.inspectors[index]} className="max-h-full grayscale" alt={`Assinatura Vistoriante ${index + 1}`} />}
                                 </div>
                                 <div>
-                                  <p className="text-[12px] font-black uppercase text-black">{inspector.rank} {inspector.name}</p>
-                                  <p className="text-[10px] font-bold uppercase text-black">Matrícula: {inspector.registration}</p>
-                                  <p className="text-[10px] font-bold uppercase tracking-widest text-black">Vistoriante do CBMMS</p>
+                                  <p className="text-sm font-black uppercase text-black">{inspector.rank} {inspector.name}</p>
+                                  <p className="text-xs font-bold uppercase text-black">Matrícula: {inspector.registration}</p>
+                                  <p className="text-xs font-bold uppercase tracking-widest text-black">Vistoriante do CBMMS</p>
                                 </div>
                               </div>
                             ))}

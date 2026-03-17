@@ -53,10 +53,10 @@ async function startServer() {
       });
 
       const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: process.env.EMAIL_USER || 'maracaju.sat@ms.gov.br',
         to: email,
-        subject: 'Notificação de Vistoria Técnica - Corpo de Bombeiros',
-        text: `Olá, segue em anexo a notificação de vistoria técnica.\n\nVocê também pode baixar pelo link: ${pdfUrl}`,
+        subject: 'Resumo do Pedido - NOTIFICAÇÃO EMITIDA',
+        text: 'Olá, segue em anexo o PDF da Notificação emitida.',
         attachments: [
           {
             filename: fileName,
