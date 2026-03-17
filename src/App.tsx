@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { QRCodeCanvas } from 'qrcode.react';
+import { QRCodeSVG } from 'qrcode.react';
 import { 
   ClipboardCheck, 
   Building2, 
@@ -29,7 +29,6 @@ export default function App() {
   const [customIrregularity, setCustomIrregularity] = useState('');
   
   const [isOccupationDropdownOpen, setIsOccupationDropdownOpen] = useState(false);
-  const [errors, setErrors] = useState<Record<string, boolean>>({});
   
   const [formData, setFormData] = useState<Partial<InspectionData>>({
     date: new Date().toISOString(),
@@ -37,10 +36,9 @@ export default function App() {
     preNumber: '',
     notificationNumber: '',
     deadlineDays: 30,
-    company: { name: '', cnpj: '', street: '', number: '', neighborhood: '', city: '', address: '', phone: '', occupation: [], pscip: '' },
+    company: { name: '', cnpj: '', street: '', number: '', neighborhood: '', address: '', phone: '', occupation: [], pscip: '' },
     irregularities: [],
     responsible: { name: '', email: '@', cpf: '' },
-    witness: { name: '', role: '', cpf: '', rg: '' },
     inspectors: [{ name: '', rank: '', registration: '' }],
     signatures: { responsible: '', inspectors: [] }
   });
@@ -49,7 +47,6 @@ export default function App() {
   const inspectorSigRefs = useRef<(SignatureCanvas | null)[]>([]);
   const pdfHeaderRef = useRef<HTMLDivElement>(null);
   const pdfBodyRef = useRef<HTMLDivElement>(null);
-  const pdfTemplateRef = useRef<HTMLDivElement>(null);
 
   const maskCPF = (value: string) => {
     return value
@@ -135,88 +132,20 @@ export default function App() {
     }
   };
 
-  const handleNext = () => {
-    if (validateStep(step)) {
-      setStep(prev => prev + 1);
-      setErrors({});
-    }
-  };
-
-  const validateStep = (currentStep: number) => {
-    const newErrors: Record<string, boolean> = {};
-    let isValid = true;
-
-    switch (currentStep) {
-      case 1:
-        if (!formData.preNumber) { newErrors.preNumber = true; isValid = false; }
-        if (!formData.notificationNumber) { newErrors.notificationNumber = true; isValid = false; }
-        if (!formData.company?.pscip) { newErrors.pscip = true; isValid = false; }
-        if (!formData.company?.name) { newErrors.companyName = true; isValid = false; }
-        if (!formData.company?.cnpj) { newErrors.companyCnpj = true; isValid = false; }
-        if (!formData.company?.street) { newErrors.companyStreet = true; isValid = false; }
-        if (!formData.company?.number) { newErrors.companyNumber = true; isValid = false; }
-        if (!formData.company?.neighborhood) { newErrors.companyNeighborhood = true; isValid = false; }
-        if (!formData.company?.city) { newErrors.companyCity = true; isValid = false; }
-        if (!formData.company?.phone) { newErrors.companyPhone = true; isValid = false; }
-        if (!formData.company?.occupation || formData.company.occupation.length === 0) { newErrors.companyOccupation = true; isValid = false; }
-        
-        if (!formData.witness?.name) { newErrors.witnessName = true; isValid = false; }
-        if (!formData.witness?.role) { newErrors.witnessRole = true; isValid = false; }
-        if (!formData.witness?.rg) { newErrors.witnessRg = true; isValid = false; }
-        if (!formData.witness?.cpf) { newErrors.witnessCpf = true; isValid = false; }
-
-        if (!isValid) {
-          alert('Por favor, preencha todos os campos obrigatórios destacados em vermelho.');
-        }
-        break;
-      case 2:
-        if (!formData.irregularities || formData.irregularities.length === 0) {
-          newErrors.irregularities = true;
-          isValid = false;
-          alert('Por favor, selecione pelo menos uma irregularidade.');
-        }
-        break;
-      case 3:
-        if (!formData.responsible?.name) { newErrors.responsibleName = true; isValid = false; }
-        if (!formData.responsible?.email || formData.responsible.email === '@') { newErrors.responsibleEmail = true; isValid = false; }
-        if (!formData.responsible?.cpf) { newErrors.responsibleCpf = true; isValid = false; }
-        
-        formData.inspectors?.forEach((inspector, idx) => {
-          if (!inspector.name) { newErrors[`inspectorName_${idx}`] = true; isValid = false; }
-          if (!inspector.rank) { newErrors[`inspectorRank_${idx}`] = true; isValid = false; }
-          if (!inspector.registration) { newErrors[`inspectorRegistration_${idx}`] = true; isValid = false; }
-        });
-
-        if (!isValid) {
-          alert('Por favor, preencha todos os campos obrigatórios destacados em vermelho.');
-        }
-        break;
-      case 5:
-        // Signatures are now optional
-        isValid = true;
-        break;
-    }
-
-    setErrors(newErrors);
-    return isValid;
-  };
-
-  const handleBack = () => {
-    setStep(prev => prev - 1);
-    setErrors({});
-  };
+  const handleNext = () => setStep(prev => prev + 1);
+  const handleBack = () => setStep(prev => prev - 1);
 
   const saveResponsibleSignature = () => {
-    setFormData(prev => ({
-      ...prev,
-      signatures: {
-        ...prev.signatures!,
-        responsible: responsibleSigRef.current && !responsibleSigRef.current.isEmpty() 
-          ? responsibleSigRef.current.toDataURL() 
-          : ''
-      }
-    }));
-    setStep(prev => prev + 1);
+    if (responsibleSigRef.current && !responsibleSigRef.current.isEmpty()) {
+      setFormData(prev => ({
+        ...prev,
+        signatures: {
+          ...prev.signatures!,
+          responsible: responsibleSigRef.current?.toDataURL() || ''
+        }
+      }));
+      handleNext();
+    }
   };
 
   const saveInspectorSignatures = () => {
@@ -236,92 +165,69 @@ export default function App() {
   };
 
   const generatePDF = async () => {
-    console.log('Starting PDF generation...');
-    if (!pdfHeaderRef.current || !pdfBodyRef.current || !pdfTemplateRef.current) {
+    if (!pdfHeaderRef.current || !pdfBodyRef.current) {
       console.error('PDF refs not found');
-      alert('Erro interno: Referências do PDF não encontradas.');
       return;
     }
     
     setIsSubmitting(true);
     try {
-      // Pequeno delay para garantir que as imagens e QR Code carreguem
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = 210;
       const pageHeight = 297;
       const bottomMargin = 20;
       const sidePadding = 12;
       
-      // 1. Capturar Cabeçalho
-      let headerImgData = '';
-      let headerHeight = 0;
+      // 1. Capture Header
+      const headerCanvas = await html2canvas(pdfHeaderRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
+      const headerImgData = headerCanvas.toDataURL('image/png');
       const headerWidth = pageWidth;
-
-      try {
-        const headerCanvas = await html2canvas(pdfHeaderRef.current, {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: '#ffffff',
-          logging: false,
-          onclone: (clonedDoc) => {
-            const template = clonedDoc.getElementById('pdf-template-container');
-            if (template) {
-              template.style.position = 'relative';
-              template.style.left = '0';
-              template.style.top = '0';
-              template.style.visibility = 'visible';
-              template.style.display = 'block';
-            }
-          }
-        });
-        headerImgData = headerCanvas.toDataURL('image/jpeg', 0.95);
-        headerHeight = (headerCanvas.height * headerWidth) / headerCanvas.width;
-      } catch (headerErr) {
-        console.error('Error capturing header:', headerErr);
-        throw new Error('Falha ao capturar o cabeçalho do PDF.');
-      }
+      const headerHeight = (headerCanvas.height * headerWidth) / headerCanvas.width;
       
       let currentY = headerHeight;
       let currentPage = 1;
 
       const addHeaderAndPageNumber = (pageNum: number) => {
-        pdf.addImage(headerImgData, 'JPEG', 0, 0, headerWidth, headerHeight);
+        pdf.addImage(headerImgData, 'PNG', 0, 0, headerWidth, headerHeight);
       };
 
-      // Helper para adicionar uma seção ao PDF
+      // Helper to add a section to the PDF
       const addSection = async (elementId: string) => {
-        console.log(`Capturing section: ${elementId}`);
         const element = document.getElementById(elementId);
-        if (!element) {
-          console.warn(`Element not found: ${elementId}`);
-          return;
+        if (!element) return;
+        
+        const canvas = await html2canvas(element, { 
+          scale: 2, 
+          useCORS: true,
+          backgroundColor: '#ffffff'
+        });
+        const imgWidth = pageWidth - (sidePadding * 2);
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        
+        if (currentY + imgHeight > pageHeight - bottomMargin) {
+          pdf.addPage();
+          currentPage++;
+          currentY = headerHeight;
+          addHeaderAndPageNumber(currentPage);
         }
         
-        try {
-          const canvas = await html2canvas(element, { 
-            scale: 2,
-            useCORS: true,
-            backgroundColor: '#ffffff',
-            logging: false,
-            onclone: (clonedDoc) => {
-              const template = clonedDoc.getElementById('pdf-template-container');
-              if (template) {
-                template.style.position = 'relative';
-                template.style.left = '0';
-                template.style.top = '0';
-                template.style.visibility = 'visible';
-                template.style.display = 'block';
-              }
-              const clonedElement = clonedDoc.getElementById(elementId);
-              if (clonedElement) {
-                clonedElement.style.visibility = 'visible';
-                clonedElement.style.display = 'block';
-                clonedElement.style.opacity = '1';
-              }
-            }
-          });
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', sidePadding, currentY, imgWidth, imgHeight);
+        currentY += imgHeight + 6; // Spacing between sections
+      };
+
+      // Special handling for irregularities to avoid cutting text
+      const addIrregularities = async () => {
+        const container = document.getElementById('pdf-section-irregularities');
+        if (!container) return;
+
+        // Add the title of the section first
+        const titleElement = container.querySelector('.bg-stone-800');
+        if (titleElement) {
+          const canvas = await html2canvas(titleElement as HTMLElement, { scale: 2, backgroundColor: '#ffffff' });
           const imgWidth = pageWidth - (sidePadding * 2);
           const imgHeight = (canvas.height * imgWidth) / canvas.width;
           
@@ -331,48 +237,78 @@ export default function App() {
             currentY = headerHeight;
             addHeaderAndPageNumber(currentPage);
           }
-          
-          pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', sidePadding, currentY, imgWidth, imgHeight);
-          currentY += imgHeight + 6;
-        } catch (err) {
-          console.error(`Error capturing section ${elementId}:`, err);
-          throw new Error(`Falha ao capturar a seção ${elementId}.`);
+          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', sidePadding, currentY, imgWidth, imgHeight);
+          currentY += imgHeight;
         }
+
+        const items = container.querySelectorAll('.pdf-irregularity-item');
+        for (const item of Array.from(items)) {
+          const canvas = await html2canvas(item as HTMLElement, { scale: 2, backgroundColor: '#ffffff' });
+          const imgWidth = pageWidth - (sidePadding * 2);
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+          if (currentY + imgHeight > pageHeight - bottomMargin) {
+            pdf.addPage();
+            currentPage++;
+            currentY = headerHeight;
+            addHeaderAndPageNumber(currentPage);
+          }
+          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', sidePadding, currentY, imgWidth, imgHeight);
+          currentY += imgHeight;
+        }
+        currentY += 6;
       };
 
-      // Configuração inicial da página
+      // Initial page setup
       addHeaderAndPageNumber(1);
 
-      // Adicionar seções em ordem
+      // Add sections in order
       await addSection('pdf-section-data');
       await addSection('pdf-section-deadline');
-      await addSection('pdf-section-irregularities');
+      await addIrregularities();
       await addSection('pdf-section-return');
       await addSection('pdf-section-signatures');
 
-      // Finalizar PDF com números de página
+      // Finalize PDF: Add page numbers and footer
       const totalPages = currentPage;
       for (let i = 1; i <= totalPages; i++) {
         pdf.setPage(i);
-        pdf.setFontSize(8);
-        pdf.setTextColor(150);
-        pdf.text(
-          `Página ${i} de ${totalPages} - Gerado em ${format(new Date(), 'dd/MM/yyyy HH:mm')}`,
-          pageWidth / 2,
-          pageHeight - 10,
-          { align: 'center' }
-        );
+        
+        // Add Page Number (e.g. 1/3)
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(`${i}/${totalPages}`, 185, 48);
+        
+        // Add Footer only on last page
+        if (i === totalPages) {
+          pdf.setFontSize(9);
+          pdf.setTextColor(100, 100, 100);
+          const footerLines = [
+            "CORPO DE BOMBEIROS MILITAR DE MARACAJU-MS",
+            "Rua Apa, 21 - Bairro Centro - CEP 79150-047",
+            "Email: maracaju.sat@cbm.ms.gov.br",
+            "Telefone (whatsapp): (67) 3454-4141"
+          ];
+          
+          let y = pageHeight - 15;
+          footerLines.forEach(line => {
+            const textWidth = pdf.getTextWidth(line);
+            pdf.text(line, (pageWidth - textWidth) / 2, y);
+            y += 4;
+          });
+        }
       }
       
-      console.log('PDF generated successfully.');
       const pdfBase64 = pdf.output('datauristring').split(',')[1];
       
+      // Save locally for the user
       const fileName = `NOT ${formData.notificationNumber} - ${formData.company?.name || 'documento'}.pdf`.replace(/\//g, '_');
       pdf.save(fileName);
       
-      // Enviar para o servidor
+      // Send to server for Email and SMS delivery
       try {
-        const response = await fetch('/api/send-pdf', {
+        await fetch('/api/send-pdf', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -382,19 +318,14 @@ export default function App() {
             preNumber: formData.preNumber
           })
         });
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error('Server error:', errorData);
-        }
       } catch (apiError) {
         console.error('Error sending PDF to server:', apiError);
       }
       
+      await new Promise(resolve => setTimeout(resolve, 1500));
       setIsSuccess(true);
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert(error instanceof Error ? error.message : 'Ocorreu um erro ao gerar o PDF. Verifique os dados e tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -410,10 +341,9 @@ export default function App() {
       preNumber: '',
       notificationNumber: '',
       deadlineDays: 30,
-      company: { name: '', cnpj: '', pscip: '', street: '', number: '', neighborhood: '', city: '', address: '', phone: '', occupation: [] },
+      company: { name: '', cnpj: '', pscip: '', street: '', number: '', neighborhood: '', address: '', phone: '', occupation: [] },
       irregularities: [],
       responsible: { name: '', email: '@', cpf: '' },
-      witness: { name: '', role: '', cpf: '', rg: '' },
       inspectors: [{ name: '', rank: '', registration: '' }],
       signatures: { responsible: '', inspectors: [] }
     });
@@ -502,16 +432,10 @@ export default function App() {
                           type="text"
                           value={formData.preNumber}
                           onChange={(e) => updateFormData('preNumber', e.target.value.replace(/PRÉ/gi, 'PRE'))}
-                          className={cn(
-                            "flex-1 p-3 bg-stone-50 border border-stone-200 rounded-l-xl focus:ring-2 focus:ring-red-500 outline-none",
-                            errors.preNumber && "border-red-500 ring-2 ring-red-200"
-                          )}
+                          className="flex-1 p-3 bg-stone-50 border border-stone-200 rounded-l-xl focus:ring-2 focus:ring-red-500 outline-none"
                           placeholder="0000"
                         />
-                        <span className={cn(
-                          "bg-stone-200 px-4 py-3 border border-l-0 border-stone-200 rounded-r-xl font-bold text-stone-600",
-                          errors.preNumber && "border-red-500"
-                        )}>/PRE</span>
+                        <span className="bg-stone-200 px-4 py-3 border border-l-0 border-stone-200 rounded-r-xl font-bold text-stone-600">/PRE</span>
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -520,10 +444,7 @@ export default function App() {
                         type="text"
                         value={formData.notificationNumber}
                         onChange={(e) => updateFormData('notificationNumber', maskNotification(e.target.value))}
-                        className={cn(
-                          "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
-                          errors.notificationNumber && "border-red-500 ring-2 ring-red-200"
-                        )}
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
                         placeholder="00000000/NOT/0000000.0000/PRE"
                       />
                     </div>
@@ -545,10 +466,7 @@ export default function App() {
                         type="text"
                         value={formData.company?.pscip}
                         onChange={(e) => updateNestedField('company', 'pscip', e.target.value)}
-                        className={cn(
-                          "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
-                          errors.pscip && "border-red-500 ring-2 ring-red-200"
-                        )}
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
                         placeholder="Nº do Processo"
                       />
                     </div>
@@ -558,10 +476,7 @@ export default function App() {
                         type="text"
                         value={formData.company?.name}
                         onChange={(e) => updateNestedField('company', 'name', e.target.value)}
-                        className={cn(
-                          "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
-                          errors.companyName && "border-red-500 ring-2 ring-red-200"
-                        )}
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
                         placeholder="Ex: Mercado Silva LTDA"
                       />
                     </div>
@@ -571,10 +486,7 @@ export default function App() {
                         type="text"
                         value={formData.company?.cnpj}
                         onChange={(e) => updateNestedField('company', 'cnpj', maskCPFOrCNPJ(e.target.value))}
-                        className={cn(
-                          "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
-                          errors.companyCnpj && "border-red-500 ring-2 ring-red-200"
-                        )}
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
                         placeholder="00.000.000/0000-00"
                       />
                     </div>
@@ -582,10 +494,7 @@ export default function App() {
                       <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">OCUPAÇÃO (Selecione uma ou mais)</label>
                       <div 
                         onClick={() => setIsOccupationDropdownOpen(!isOccupationDropdownOpen)}
-                        className={cn(
-                          "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl flex justify-between items-center cursor-pointer hover:border-stone-300 transition-colors",
-                          errors.companyOccupation && "border-red-500 ring-2 ring-red-200"
-                        )}
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl flex justify-between items-center cursor-pointer hover:border-stone-300 transition-colors"
                       >
                         <span className="text-sm text-stone-600">
                           {formData.company?.occupation && formData.company.occupation.length > 0 
@@ -642,10 +551,7 @@ export default function App() {
                         type="text"
                         value={formData.company?.street}
                         onChange={(e) => updateNestedField('company', 'street', e.target.value)}
-                        className={cn(
-                          "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
-                          errors.companyStreet && "border-red-500 ring-2 ring-red-200"
-                        )}
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
                         placeholder="Rua, Avenida, etc."
                       />
                     </div>
@@ -655,10 +561,7 @@ export default function App() {
                         type="text"
                         value={formData.company?.number}
                         onChange={(e) => updateNestedField('company', 'number', e.target.value)}
-                        className={cn(
-                          "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
-                          errors.companyNumber && "border-red-500 ring-2 ring-red-200"
-                        )}
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
                         placeholder="123"
                       />
                     </div>
@@ -668,96 +571,19 @@ export default function App() {
                         type="text"
                         value={formData.company?.neighborhood}
                         onChange={(e) => updateNestedField('company', 'neighborhood', e.target.value)}
-                        className={cn(
-                          "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
-                          errors.companyNeighborhood && "border-red-500 ring-2 ring-red-200"
-                        )}
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
                         placeholder="Centro"
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Cidade</label>
-                      <input 
-                        type="text"
-                        value={formData.company?.city}
-                        onChange={(e) => updateNestedField('company', 'city', e.target.value)}
-                        className={cn(
-                          "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
-                          errors.companyCity && "border-red-500 ring-2 ring-red-200"
-                        )}
-                        placeholder="Maracaju"
-                      />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
                       <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Telefone de Contato</label>
                       <input 
                         type="text"
                         value={formData.company?.phone}
                         onChange={(e) => updateNestedField('company', 'phone', maskPhone(e.target.value))}
-                        className={cn(
-                          "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
-                          errors.companyPhone && "border-red-500 ring-2 ring-red-200"
-                        )}
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
                         placeholder="(00) 00000-0000"
                       />
-                    </div>
-
-                    <div className="md:col-span-2 pt-4 border-t border-stone-100">
-                      <h3 className="text-sm font-bold text-stone-400 uppercase tracking-widest mb-4">Acompanhou a Vistoria</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2 md:col-span-2">
-                          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Nome</label>
-                          <input 
-                            type="text"
-                            value={formData.witness?.name}
-                            onChange={(e) => updateNestedField('witness', 'name', e.target.value)}
-                            className={cn(
-                              "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
-                              errors.witnessName && "border-red-500 ring-2 ring-red-200"
-                            )}
-                            placeholder="Nome de quem acompanhou"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Função no Local</label>
-                          <input 
-                            type="text"
-                            value={formData.witness?.role}
-                            onChange={(e) => updateNestedField('witness', 'role', e.target.value)}
-                            className={cn(
-                              "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
-                              errors.witnessRole && "border-red-500 ring-2 ring-red-200"
-                            )}
-                            placeholder="Ex: Gerente, Proprietário"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">RG</label>
-                          <input 
-                            type="text"
-                            value={formData.witness?.rg}
-                            onChange={(e) => updateNestedField('witness', 'rg', e.target.value)}
-                            className={cn(
-                              "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
-                              errors.witnessRg && "border-red-500 ring-2 ring-red-200"
-                            )}
-                            placeholder="0.000.000"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">CPF</label>
-                          <input 
-                            type="text"
-                            value={formData.witness?.cpf}
-                            onChange={(e) => updateNestedField('witness', 'cpf', maskCPF(e.target.value))}
-                            className={cn(
-                              "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
-                              errors.witnessCpf && "border-red-500 ring-2 ring-red-200"
-                            )}
-                            placeholder="000.000.000-00"
-                          />
-                        </div>
-                      </div>
                     </div>
                   </div>
                   <div className="flex justify-end pt-4">
@@ -776,10 +602,7 @@ export default function App() {
                   </div>
                   <div className="space-y-3">
                     <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Selecione as Irregularidades Encontradas</label>
-                    <div className={cn(
-                      "space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar p-1 rounded-xl",
-                      errors.irregularities && "border-2 border-red-500 bg-red-50"
-                    )}>
+                    <div className="space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                       {IRREGULARITIES_LIST.map((item) => (
                         <div 
                           key={item}
@@ -857,10 +680,7 @@ export default function App() {
                           type="text"
                           value={formData.responsible?.name}
                           onChange={(e) => updateNestedField('responsible', 'name', e.target.value)}
-                          className={cn(
-                            "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
-                            errors.responsibleName && "border-red-500 ring-2 ring-red-200"
-                          )}
+                          className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
                           placeholder="Nome do responsável"
                         />
                       </div>
@@ -880,10 +700,7 @@ export default function App() {
                             }
                             updateNestedField('responsible', 'email', val);
                           }}
-                          className={cn(
-                            "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
-                            errors.responsibleEmail && "border-red-500 ring-2 ring-red-200"
-                          )}
+                          className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
                           placeholder="email@exemplo.com"
                         />
                       </div>
@@ -893,10 +710,7 @@ export default function App() {
                           type="text"
                           value={formData.responsible?.cpf}
                           onChange={(e) => updateNestedField('responsible', 'cpf', maskCPF(e.target.value))}
-                          className={cn(
-                            "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
-                            errors.responsibleCpf && "border-red-500 ring-2 ring-red-200"
-                          )}
+                          className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
                           placeholder="000.000.000-00"
                         />
                       </div>
@@ -937,10 +751,7 @@ export default function App() {
                               newInspectors[index].name = e.target.value;
                               updateFormData('inspectors', newInspectors);
                             }}
-                            className={cn(
-                              "w-full p-3 bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
-                              errors[`inspectorName_${index}`] && "border-red-500 ring-2 ring-red-200"
-                            )}
+                            className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
                             placeholder="Nome do militar"
                           />
                         </div>
@@ -954,10 +765,7 @@ export default function App() {
                               newInspectors[index].registration = e.target.value;
                               updateFormData('inspectors', newInspectors);
                             }}
-                            className={cn(
-                              "w-full p-3 bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
-                              errors[`inspectorRegistration_${index}`] && "border-red-500 ring-2 ring-red-200"
-                            )}
+                            className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
                             placeholder="000.000-0"
                           />
                         </div>
@@ -970,10 +778,7 @@ export default function App() {
                               newInspectors[index].rank = e.target.value;
                               updateFormData('inspectors', newInspectors);
                             }}
-                            className={cn(
-                              "w-full p-3 bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none appearance-none",
-                              errors[`inspectorRank_${index}`] && "border-red-500 ring-2 ring-red-200"
-                            )}
+                            className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none appearance-none"
                           >
                             <option value="">Selecione</option>
                             {INSPECTOR_RANKS.map(rank => (
@@ -999,11 +804,11 @@ export default function App() {
                 <div className="space-y-6">
                   <div className="flex items-center gap-3 mb-2">
                     <PenTool className="text-red-600" />
-                    <h2 className="text-xl font-bold">Assinatura de quem acompanhou</h2>
+                    <h2 className="text-xl font-bold">Assinatura do Responsável</h2>
                   </div>
                   <div className="space-y-3">
                     <div className="flex justify-between items-end">
-                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Assinatura: {formData.witness?.name} ({formData.witness?.role})</label>
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Assinatura do Responsável ({formData.responsible?.name} - CPF: {formData.responsible?.cpf})</label>
                       <button onClick={() => responsibleSigRef.current?.clear()} className="text-[10px] text-red-600 font-bold hover:underline">Limpar</button>
                     </div>
                     <div className="border-2 border-dashed border-stone-200 rounded-2xl bg-stone-50 overflow-hidden h-64">
@@ -1084,14 +889,6 @@ export default function App() {
                         <p className="text-[10px] font-bold text-stone-400 uppercase">E-mail</p>
                         <p className="font-bold">{formData.responsible?.email}</p>
                       </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-stone-400 uppercase">Acompanhou a Vistoria</p>
-                        <p className="font-bold">{formData.witness?.name}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-stone-400 uppercase">Função</p>
-                        <p className="font-bold">{formData.witness?.role}</p>
-                      </div>
                       <div className="col-span-2">
                         <p className="text-[10px] font-bold text-stone-400 uppercase">Ocupação</p>
                         <p className="font-bold">{formData.company?.occupation?.join(', ') || 'Nenhuma selecionada'}</p>
@@ -1122,6 +919,148 @@ export default function App() {
                     </div>
                   </div>
 
+                  <div className="fixed left-[-9999px] top-0">
+                    <div ref={pdfHeaderRef} className="w-[210mm] p-12 pb-0 font-sans text-black bg-white">
+                      <div className="flex justify-between items-center pb-6 mb-8 border-b-4 border-black">
+                        <img 
+                          src="https://www.bombeiros.ms.gov.br/wp-content/uploads/2015/01/Bras%C3%A3o_estilizado_tipo_texto._jpg.jpg" 
+                          className="w-32 h-20 object-contain" 
+                          alt="Logo CBMMS" 
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="text-center flex-1 px-6">
+                          <p className="text-[11px] font-black uppercase tracking-tighter text-black">Estado de Mato Grosso do Sul</p>
+                          <p className="text-[11px] font-bold uppercase text-black">Secretaria de Estado de Justiça e Segurança Pública</p>
+                          <p className="text-[19px] font-black uppercase mt-1 text-black">Corpo de Bombeiros Militar</p>
+                          <p className="text-[11px] font-bold text-black">3º SGBM / 2º GBM - Maracaju - MS</p>
+                        </div>
+                        <div className="w-20"></div>
+                      </div>
+
+                      <div className="flex justify-between items-stretch mb-8 rounded-lg overflow-hidden border border-black bg-white">
+                        <div className="flex-1 p-4 border-r border-black">
+                          <h1 className="text-[31px] font-black uppercase leading-none text-black">NOTIFICAÇÃO</h1>
+                          <p className="text-[13px] font-bold mt-1 text-black">EXIGÊNCIA DE VISTORIA TÉCNICA</p>
+                        </div>
+                        <div className="p-4 bg-white min-w-[220px] flex flex-col justify-center">
+                          <p className="text-[11px] font-black uppercase tracking-widest mb-1 text-black">Identificação</p>
+                          <p className="text-[13px] font-black text-black">PRE: {formData.preNumber}/PRE</p>
+                          <p className="text-[13px] font-black text-black">Nº NOTIFICAÇÃO: {formData.notificationNumber}</p>
+                          <div className="flex gap-4 mt-2 text-[11px] font-bold text-black">
+                            <span>{format(new Date(), "dd/MM/yyyy")}</span>
+                            <span>{format(new Date(), "HH:mm")}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div ref={pdfBodyRef} className="w-[210mm] p-12 pt-0 font-sans text-black bg-white">
+                      <div className="space-y-6">
+                        <div id="pdf-section-data" className="rounded-xl border border-black overflow-hidden">
+                          <div className="text-white px-4 py-2 text-[11px] font-black uppercase tracking-widest bg-black">Dados da Edificação / Evento</div>
+                          <div className="p-4 grid grid-cols-2 gap-y-3 gap-x-6 text-[12px]">
+                            <div className="col-span-2 flex border-b border-stone-100 pb-1">
+                              <span className="font-black uppercase w-32 text-black">Razão Social:</span>
+                              <span className="font-bold text-black">{formData.company?.name}</span>
+                            </div>
+                            <div className="flex border-b border-stone-100 pb-1">
+                              <span className="font-black uppercase w-32 text-black">CNPJ/CPF:</span>
+                              <span className="font-bold text-black">{formData.company?.cnpj}</span>
+                            </div>
+                            <div className="flex border-b border-stone-100 pb-1">
+                              <span className="font-black uppercase w-32 text-black">Nº PSCIP:</span>
+                              <span className="font-bold text-black">{formData.company?.pscip}</span>
+                            </div>
+                            <div className="flex border-b border-stone-100 pb-1">
+                              <span className="font-black uppercase w-32 text-black">Responsável:</span>
+                              <span className="font-bold text-black">{formData.responsible?.name}</span>
+                            </div>
+                            <div className="flex border-b border-stone-100 pb-1">
+                              <span className="font-black uppercase w-32 text-black">Ocupação:</span>
+                              <span className="font-bold text-black">{formData.company?.occupation?.join(', ')}</span>
+                            </div>
+                            <div className="col-span-2 flex border-b border-stone-100 pb-1">
+                              <span className="font-black uppercase w-32 text-black">Endereço:</span>
+                              <span className="font-bold text-black">{formData.company?.street}, {formData.company?.number} - {formData.company?.neighborhood}</span>
+                            </div>
+                            <div className="flex border-b border-stone-100 pb-1">
+                              <span className="font-black uppercase w-32 text-black">Telefone:</span>
+                              <span className="font-bold text-black">{formData.company?.phone}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div id="pdf-section-deadline" className="rounded-xl border-2 border-black p-5 bg-white">
+                          <h2 className="text-[13px] font-black uppercase mb-3 flex items-center gap-2 text-black">
+                            <AlertTriangle size={14} /> PRAZO PARA CUMPRIMENTO
+                          </h2>
+                          <div className="space-y-3 text-[12px] leading-relaxed text-black">
+                            <p>Em conformidade com a <strong>Lei Estadual nº 4.335/2013</strong>, Vossa Senhoria deverá cumprir as exigências listadas abaixo no prazo de <span className="text-black font-black underline decoration-2 underline-offset-4">{formData.deadlineDays} DIAS</span>, a contar da data de recebimento deste documento.</p>
+                            <p className="text-black font-bold">O prazo para cumprimento desta notificação se encerra em: {formData.date && formData.deadlineDays ? format(addDays(new Date(formData.date), formData.deadlineDays), "dd/MM/yyyy") : format(addDays(new Date(), 30), "dd/MM/yyyy")}</p>
+                            <p className="font-bold text-black">O não cumprimento desta notificação sujeita o infrator à multa, interdição ou outras penalidades previstas em Lei.</p>
+                            <p className="border-l-4 border-black pl-3 italic text-black">Vossa Senhoria fica cientificada de que, conforme o Art. 9º da Lei nº 4.335/2013, o local não pode funcionar sem o devido Alvará do Corpo de Bombeiros Militar do Mato Grosso do Sul.</p>
+                          </div>
+                        </div>
+
+                        <div id="pdf-section-irregularities" className="rounded-xl border border-black overflow-hidden">
+                          <div className="text-white px-4 py-2 text-[11px] font-black uppercase tracking-widest bg-black">Exigências Técnicas a Cumprir</div>
+                          <div className="p-6 space-y-1">
+                            {formData.irregularities?.map((i, idx) => (
+                              <div key={idx} className="pdf-irregularity-item flex gap-4 items-start border-b border-stone-50 pb-1 last:border-0" style={{ lineHeight: '1.15' }}>
+                                <span className="flex items-center justify-center w-5 h-5 rounded-full font-black text-[10px] shrink-0 bg-stone-100 text-stone-900">{idx + 1}</span>
+                                <span className="text-[12px] font-medium pt-0.5 text-stone-800">{i}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div id="pdf-section-return" className="rounded-xl border border-black p-5 bg-white flex items-center gap-6">
+                          <div className="flex-1 space-y-2">
+                            <p className="text-[12px] leading-relaxed text-black font-medium">
+                              Ao cumprir todas as exigências desta notificação, acesse o site <span className="text-blue-600 font-bold underline">https://prevenir.bombeiros.ms.gov.br</span> aba <span className="font-bold">"ATENDIMENTO TÉCNICO"</span> e solicite o retorno de vistoria para esta edificação.
+                            </p>
+                          </div>
+                          <div className="shrink-0 bg-white p-2 rounded-lg border border-black shadow-sm">
+                            <QRCodeSVG 
+                              value="https://prevenir.bombeiros.ms.gov.br/"
+                              size={80}
+                              level="H"
+                              includeMargin={false}
+                            />
+                            <p className="text-[9px] text-center mt-1 font-bold text-black uppercase tracking-tighter">Acesse o Prevenir</p>
+                          </div>
+                        </div>
+
+                        <div id="pdf-section-signatures" className="mt-12 grid grid-cols-2 gap-12">
+                          <div className="text-center space-y-3">
+                            <div className="h-24 flex items-end justify-center border-b-2 border-black pb-2">
+                              {formData.signatures?.responsible && <img src={formData.signatures.responsible} className="max-h-full grayscale" alt="Assinatura Responsável" />}
+                            </div>
+                            <div>
+                              <p className="text-[12px] font-black uppercase text-black">{formData.responsible?.name}</p>
+                              <p className="text-[10px] font-bold uppercase text-black">CPF: {formData.responsible?.cpf}</p>
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-black">Responsável pelo Local</p>
+                            </div>
+                          </div>
+                          <div className="space-y-8">
+                            {formData.inspectors?.map((inspector, index) => (
+                              <div key={index} className="text-center space-y-3">
+                                <div className="h-24 flex items-end justify-center border-b-2 border-black pb-2">
+                                  {formData.signatures?.inspectors?.[index] && <img src={formData.signatures.inspectors[index]} className="max-h-full grayscale" alt={`Assinatura Vistoriante ${index + 1}`} />}
+                                </div>
+                                <div>
+                                  <p className="text-[12px] font-black uppercase text-black">{inspector.rank} {inspector.name}</p>
+                                  <p className="text-[10px] font-bold uppercase text-black">Matrícula: {inspector.registration}</p>
+                                  <p className="text-[10px] font-bold uppercase tracking-widest text-black">Vistoriante do CBMMS</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="flex justify-between pt-4">
                     <button onClick={handleBack} className="text-stone-500 px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-stone-100">
                       <ChevronLeft size={20} /> Voltar
@@ -1143,208 +1082,6 @@ export default function App() {
           )}
         </AnimatePresence>
       </main>
-
-      <div id="pdf-template-container" ref={pdfTemplateRef} className="fixed top-0 left-[-9999px] pointer-events-none bg-white" style={{ width: '210mm' }}>
-        <div ref={pdfHeaderRef} className="w-[210mm] p-8 pb-0 font-sans text-black bg-white">
-          <div className="flex justify-between items-center pb-4 mb-4 border-b-2 border-black">
-            <div className="w-[80px] h-[80px] flex items-center justify-center border border-stone-200">
-              <span className="text-[10px] text-stone-400">LOGO</span>
-            </div>
-            <div className="text-center flex-1 px-4">
-              <p className="text-[12px] font-black uppercase text-black">ESTADO DE MATO GROSSO DO SUL</p>
-              <p className="text-[11px] font-bold uppercase text-black">SECRETARIA DE ESTADO DE JUSTIÇA E SEGURANÇA PÚBLICA</p>
-              <p className="text-[14px] font-black uppercase text-black">CORPO DE BOMBEIROS MILITAR</p>
-            </div>
-            <div className="w-[80px] h-[80px] flex items-center justify-center border border-stone-200">
-              <span className="text-[10px] text-stone-400">BRASÃO</span>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center mb-4">
-            <div className="border-2 border-black p-2 w-full text-center">
-              <h1 className="text-[22px] font-black uppercase leading-none text-black">NOTIFICAÇÃO</h1>
-              <p className="text-[16px] font-black mt-1 text-black">EXIGÊNCIA DE VISTORIA</p>
-              <div className="mt-2 border-t border-black pt-1">
-                <p className="text-[16px] font-black text-black">Nº {formData.notificationNumber} /13º SGBM/Ind 20{format(new Date(), "yy")}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div ref={pdfBodyRef} className="w-[210mm] p-8 pt-0 font-sans text-black bg-white">
-          <div className="space-y-4">
-            <div id="pdf-section-data" className="space-y-4">
-              <div className="text-[12px] border-t border-black pt-2">
-                <div className="grid grid-cols-2 gap-y-1">
-                  <div className="flex border-b border-black pb-0.5">
-                    <span className="font-black uppercase w-16">PSCIP:</span>
-                    <span className="font-medium">{formData.company?.pscip}</span>
-                  </div>
-                  <div className="flex border-b border-black pb-0.5 ml-4">
-                    <span className="font-black uppercase w-12">PRE:</span>
-                    <span className="font-medium">{formData.preNumber}</span>
-                  </div>
-                  <div className="col-span-2 flex border-b border-black pb-0.5">
-                    <span className="font-black uppercase w-24">CNPJ/CPF:</span>
-                    <span className="font-medium">{formData.company?.cnpj}</span>
-                  </div>
-                  <div className="col-span-2 flex border-b border-black pb-0.5">
-                    <span className="font-black uppercase w-32">Razão Social:</span>
-                    <span className="font-medium">{formData.company?.name}</span>
-                  </div>
-                  <div className="col-span-2 flex border-b border-black pb-0.5">
-                    <span className="font-black uppercase w-56">Proprietário ou Responsável:</span>
-                    <span className="font-medium">{formData.responsible?.name} {formData.responsible?.cpf ? `- CPF: ${formData.responsible.cpf}` : ''}</span>
-                  </div>
-                  <div className="col-span-2 flex border-b border-black pb-0.5">
-                    <span className="font-black uppercase w-56">Endereço da Edificação:</span>
-                    <span className="font-medium">{formData.company?.street}, {formData.company?.number}</span>
-                  </div>
-                  <div className="col-span-2 grid grid-cols-3 gap-4 border-b border-black pb-0.5">
-                    <div className="flex">
-                      <span className="font-black uppercase w-16">Bairro:</span>
-                      <span className="font-medium">{formData.company?.neighborhood}</span>
-                    </div>
-                    <div className="flex">
-                      <span className="font-black uppercase w-16">Fone:</span>
-                      <span className="font-medium">{formData.company?.phone}</span>
-                    </div>
-                    <div className="flex">
-                      <span className="font-black uppercase w-16">Cidade:</span>
-                      <span className="font-medium">{formData.company?.city} /MS</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-2 border-black p-2 text-[12px]">
-                <p className="font-bold">Classificação da Edificação quanto à ocupação do local, de acordo com a Tabela 1 da Lei 4.335/2013: <span className="text-blue-700 font-black text-[14px] ml-2">{formData.company?.occupation?.[0]?.split(' ')[0]}</span></p>
-              </div>
-            </div>
-
-            <div id="pdf-section-deadline" className="text-[12px] leading-tight">
-              <p>De conformidade com Lei 4.335/2013, V. Sª. deverá cumprir as exigências abaixo, no prazo de <span className="font-black text-[14px] text-blue-700 underline px-2">{formData.deadlineDays} {formData.deadlineDays === 1 ? 'DIA' : 'DIAS'}</span>, a contar da data do recebimento deste documento.</p>
-            </div>
-
-            <div id="pdf-section-irregularities" className="border border-black min-h-[300px]">
-              <table className="w-full text-[12px] border-collapse">
-                <tbody>
-                  {formData.irregularities?.map((i, idx) => (
-                    <tr key={idx} className="border-b border-black">
-                      <td className="p-2 border-r border-black w-8 text-center font-bold">{idx + 1}</td>
-                      <td className="p-2">{i}</td>
-                    </tr>
-                  ))}
-                  {/* Fill empty rows to match the look of the paper form */}
-                  {Array.from({ length: Math.max(0, 10 - (formData.irregularities?.length || 0)) }).map((_, idx) => (
-                    <tr key={`empty-${idx}`} className="border-b border-black h-8">
-                      <td className="p-2 border-r border-black w-8"></td>
-                      <td className="p-2"></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div id="pdf-section-return" className="space-y-4">
-              <div className="border-2 border-black p-2 text-[11px] text-center font-bold">
-                <p>O não cumprimento desta notificação sujeita o infrator à multa, interdição ou outra penalidade cominada em Lei, podendo ser emitida notificação posterior se for identificada alguma exigência.</p>
-              </div>
-
-              <div className="text-[11px] italic border-t border-black pt-2 mt-4">
-                <p>Esta notificação foi emitida no dia {format(new Date(), "dd/MM/yyyy")} às {format(new Date(), "HH:mm")}, sendo a pessoa abaixo assinada e identificada, ciente das suas responsabilidades.</p>
-              </div>
-            </div>
-
-            <div id="pdf-section-signatures" className="space-y-6">
-              <div className="text-[12px] space-y-2 mt-4">
-                <p className="font-black uppercase text-center border-b border-black pb-1">ACOMPANHOU A VISTORIA</p>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                  <div className="flex border-b border-black">
-                    <span className="font-black mr-2">Nome:</span>
-                    <span className="font-medium truncate">{formData.witness?.name}</span>
-                  </div>
-                  <div className="flex border-b border-black">
-                    <span className="font-black mr-2">Função:</span>
-                    <span className="font-medium">{formData.witness?.role}</span>
-                  </div>
-                  <div className="flex border-b border-black">
-                    <span className="font-black mr-2">RG:</span>
-                    <span className="font-medium">{formData.witness?.rg}</span>
-                  </div>
-                  <div className="flex border-b border-black">
-                    <span className="font-black mr-2">CPF:</span>
-                    <span className="font-medium">{formData.witness?.cpf}</span>
-                  </div>
-                </div>
-                <div className="flex items-end gap-4 mt-2">
-                  <span className="font-black">Assinatura:</span>
-                  <div className="flex-1 border-b border-black h-12 flex items-center justify-center">
-                    {formData.signatures?.responsible && <img src={formData.signatures.responsible} className="max-h-full grayscale" alt="Assinatura" />}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-8 text-[11px] mt-4">
-                <div className="flex flex-col">
-                  <div className="flex border-b border-black mb-2">
-                    <span className="font-black mr-2">Local:</span>
-                    <span className="font-medium">{formData.company?.city} - MS</span>
-                  </div>
-                  <div className="border border-black p-2 flex-1 grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <p className="font-black">Fiscalizador</p>
-                      <p className="font-black">Posto/Grad.</p>
-                      <p className="font-black">Matr/Func</p>
-                    </div>
-                    <div className="space-y-1 text-center">
-                      {formData.inspectors?.[0] && (
-                        <>
-                          <div className="h-10 flex items-center justify-center border-b border-stone-200">
-                            {formData.signatures?.inspectors?.[0] && <img src={formData.signatures.inspectors[0]} className="max-h-full grayscale" alt="Assinatura" />}
-                          </div>
-                          <p className="font-medium border-b border-stone-100">{formData.inspectors[0].rank}</p>
-                          <p className="font-medium">{formData.inspectors[0].registration}</p>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-col">
-                  <div className="flex border-b border-black mb-2">
-                    <span className="font-black mr-2">Data:</span>
-                    <span className="font-medium">{format(new Date(), "dd / MM / yyyy")}</span>
-                  </div>
-                  <div className="border border-black p-2 flex-1 grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <p className="font-black">Fiscalizador</p>
-                      <p className="font-black">Posto/Grad.</p>
-                      <p className="font-black">Matr/Func</p>
-                    </div>
-                    <div className="space-y-1 text-center">
-                      {formData.inspectors?.[1] && (
-                        <>
-                          <div className="h-10 flex items-center justify-center border-b border-stone-200">
-                            {formData.signatures?.inspectors?.[1] && <img src={formData.signatures.inspectors[1]} className="max-h-full grayscale" alt="Assinatura" />}
-                          </div>
-                          <p className="font-medium border-b border-stone-100">{formData.inspectors[1].rank}</p>
-                          <p className="font-medium">{formData.inspectors[1].registration}</p>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="text-[9px] text-center mt-4 border-t border-stone-200 pt-2 space-y-0.5">
-                <p className="font-bold">Rua Appa, 21 - Vila do Prata - CEP 79150-000 - Fone: (67) 3454-4141</p>
-                <p>Horário de expediente administrativo: de 2ª à 6ª feira - das 7h30 às 12h00 e das 14h00 às 17h30</p>
-                <p>E-mail: maracaju.sal@cbm.ms.gov.br</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
       <footer className="max-w-4xl mx-auto mt-12 px-4 text-center">
         <p className="text-stone-400 text-xs font-medium">© 2026 Bombeiro Digital - Sistema de Gestão de Vistorias Técnicas</p>
       </footer>

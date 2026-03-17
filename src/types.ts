@@ -6,7 +6,6 @@ export interface CompanyData {
   street: string;
   number: string;
   neighborhood: string;
-  city: string;
   address: string;
   phone: string;
   occupation: string[];
@@ -17,13 +16,6 @@ export interface ResponsibleData {
   name: string;
   email: string;
   cpf: string;
-}
-
-export interface WitnessData {
-  name: string;
-  role: string;
-  cpf: string;
-  rg: string;
 }
 
 export interface InspectorData {
@@ -46,7 +38,6 @@ export interface InspectionData {
   company: CompanyData;
   irregularities: string[];
   responsible: ResponsibleData;
-  witness: WitnessData;
   inspectors: InspectorData[];
   signatures: SignaturesData;
 }
