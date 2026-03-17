@@ -35,9 +35,9 @@ export default function App() {
     preNumber: '',
     notificationNumber: '',
     deadlineDays: 30,
-    company: { name: '', cnpj: '', address: '', phone: '', occupation: [], pscip: '' },
+    company: { name: '', cnpj: '', street: '', number: '', neighborhood: '', address: '', phone: '', occupation: [], pscip: '' },
     irregularities: [],
-    responsible: { name: '', email: '', cpf: '' },
+    responsible: { name: '', email: '@', cpf: '' },
     inspectors: [{ name: '', rank: '', registration: '' }],
     signatures: { responsible: '', inspectors: [] }
   });
@@ -77,20 +77,22 @@ export default function App() {
   const maskNotification = (value: string) => {
     if (!value) return '';
     
+    let val = value.replace(/NÃO/gi, 'NOT');
+    
     const current = formData.notificationNumber || '';
-    const isDeleting = value.length < current.length;
-    if (isDeleting) return value;
+    const isDeleting = val.length < current.length;
+    if (isDeleting) return val;
 
-    if (value.endsWith('/') && !value.includes('/ NOT /')) {
-      return value.slice(0, -1) + '/ NOT /';
+    if (val.endsWith('/') && !val.includes('/NOT/')) {
+      return val.slice(0, -1) + '/NOT/';
     }
 
-    if (value.endsWith('.') && value.includes('/ NOT /') && !value.includes('/PRE')) {
+    if (val.endsWith('.') && val.includes('/NOT/') && !val.includes('/PRE')) {
       const pre = formData.preNumber || '____';
-      return value.slice(0, -1) + '. ' + pre + '/PRE';
+      return val.slice(0, -1) + '.' + pre + '/PRE';
     }
 
-    return value;
+    return val;
   };
 
   const maskCPFOrCNPJ = (value: string) => {
@@ -299,7 +301,8 @@ export default function App() {
       const pdfBase64 = pdf.output('datauristring').split(',')[1];
       
       // Save locally for the user
-      pdf.save(`notificacao_${formData.preNumber || 'documento'}.pdf`);
+      const fileName = `NOT ${formData.notificationNumber} - ${formData.company?.name || 'documento'}.pdf`.replace(/\//g, '_');
+      pdf.save(fileName);
       
       // Send to server for Email and SMS delivery
       try {
@@ -336,9 +339,9 @@ export default function App() {
       preNumber: '',
       notificationNumber: '',
       deadlineDays: 30,
-      company: { name: '', cnpj: '', pscip: '', address: '', phone: '', occupation: [] },
+      company: { name: '', cnpj: '', pscip: '', street: '', number: '', neighborhood: '', address: '', phone: '', occupation: [] },
       irregularities: [],
-      responsible: { name: '', email: '', cpf: '' },
+      responsible: { name: '', email: '@', cpf: '' },
       inspectors: [{ name: '', rank: '', registration: '' }],
       signatures: { responsible: '', inspectors: [] }
     });
@@ -426,7 +429,7 @@ export default function App() {
                         <input 
                           type="text"
                           value={formData.preNumber}
-                          onChange={(e) => updateFormData('preNumber', e.target.value)}
+                          onChange={(e) => updateFormData('preNumber', e.target.value.replace(/PRÉ/gi, 'PRE'))}
                           className="flex-1 p-3 bg-stone-50 border border-stone-200 rounded-l-xl focus:ring-2 focus:ring-red-500 outline-none"
                           placeholder="0000"
                         />
@@ -440,7 +443,7 @@ export default function App() {
                         value={formData.notificationNumber}
                         onChange={(e) => updateFormData('notificationNumber', maskNotification(e.target.value))}
                         className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
-                        placeholder="00000000/ NOT /0000000. [PRE]/PRE"
+                        placeholder="00000000/NOT/0000000.0000/PRE"
                       />
                     </div>
                     <div className="space-y-2">
@@ -541,13 +544,33 @@ export default function App() {
                       )}
                     </div>
                     <div className="space-y-2 md:col-span-2">
-                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Endereço Completo</label>
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Logradouro</label>
                       <input 
                         type="text"
-                        value={formData.company?.address}
-                        onChange={(e) => updateNestedField('company', 'address', e.target.value)}
+                        value={formData.company?.street}
+                        onChange={(e) => updateNestedField('company', 'street', e.target.value)}
                         className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
-                        placeholder="Rua, Número, Bairro, Cidade - UF"
+                        placeholder="Rua, Avenida, etc."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Nº</label>
+                      <input 
+                        type="text"
+                        value={formData.company?.number}
+                        onChange={(e) => updateNestedField('company', 'number', e.target.value)}
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                        placeholder="123"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Bairro</label>
+                      <input 
+                        type="text"
+                        value={formData.company?.neighborhood}
+                        onChange={(e) => updateNestedField('company', 'neighborhood', e.target.value)}
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                        placeholder="Centro"
                       />
                     </div>
                     <div className="space-y-2">
@@ -664,7 +687,17 @@ export default function App() {
                         <input 
                           type="email"
                           value={formData.responsible?.email}
-                          onChange={(e) => updateNestedField('responsible', 'email', e.target.value)}
+                          onChange={(e) => {
+                            let val = e.target.value;
+                            if (!val.includes('@')) {
+                              val = '@';
+                            }
+                            const parts = val.split('@');
+                            if (parts.length > 2) {
+                              val = parts[0] + '@' + parts.slice(1).join('');
+                            }
+                            updateNestedField('responsible', 'email', val);
+                          }}
                           className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
                           placeholder="email@exemplo.com"
                         />
@@ -946,7 +979,7 @@ export default function App() {
                             </div>
                             <div className="col-span-2 flex border-b border-stone-100 pb-1">
                               <span className="font-black uppercase w-32 text-stone-400">Endereço:</span>
-                              <span className="font-bold text-stone-800">{formData.company?.address}</span>
+                              <span className="font-bold text-stone-800">{formData.company?.street}, {formData.company?.number} - {formData.company?.neighborhood}</span>
                             </div>
                             <div className="flex border-b border-stone-100 pb-1">
                               <span className="font-black uppercase w-32 text-stone-400">Telefone:</span>

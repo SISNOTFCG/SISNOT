@@ -3,6 +3,9 @@ export type InspectionType = 'NOTIFICAÇÃO' | 'AUTO DE INFRAÇÃO' | 'INTERDIÇ
 export interface CompanyData {
   name: string;
   cnpj: string;
+  street: string;
+  number: string;
+  neighborhood: string;
   address: string;
   phone: string;
   occupation: string[];
