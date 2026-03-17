@@ -29,6 +29,7 @@ export default function App() {
   const [customIrregularity, setCustomIrregularity] = useState('');
   
   const [isOccupationDropdownOpen, setIsOccupationDropdownOpen] = useState(false);
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
   
   const [formData, setFormData] = useState<Partial<InspectionData>>({
     date: new Date().toISOString(),
@@ -135,50 +136,70 @@ export default function App() {
   const handleNext = () => {
     if (validateStep(step)) {
       setStep(prev => prev + 1);
+      setErrors({});
     }
   };
 
   const validateStep = (currentStep: number) => {
+    const newErrors: Record<string, boolean> = {};
+    let isValid = true;
+
     switch (currentStep) {
       case 1:
-        if (!formData.preNumber || !formData.notificationNumber || !formData.company?.pscip || 
-            !formData.company?.name || !formData.company?.cnpj || !formData.company?.street || 
-            !formData.company?.number || !formData.company?.neighborhood || !formData.company?.phone ||
-            !formData.company?.occupation || formData.company.occupation.length === 0) {
-          alert('Por favor, preencha todos os campos obrigatórios da empresa.');
-          return false;
+        if (!formData.preNumber) { newErrors.preNumber = true; isValid = false; }
+        if (!formData.notificationNumber) { newErrors.notificationNumber = true; isValid = false; }
+        if (!formData.company?.pscip) { newErrors.pscip = true; isValid = false; }
+        if (!formData.company?.name) { newErrors.companyName = true; isValid = false; }
+        if (!formData.company?.cnpj) { newErrors.companyCnpj = true; isValid = false; }
+        if (!formData.company?.street) { newErrors.companyStreet = true; isValid = false; }
+        if (!formData.company?.number) { newErrors.companyNumber = true; isValid = false; }
+        if (!formData.company?.neighborhood) { newErrors.companyNeighborhood = true; isValid = false; }
+        if (!formData.company?.phone) { newErrors.companyPhone = true; isValid = false; }
+        if (!formData.company?.occupation || formData.company.occupation.length === 0) { newErrors.companyOccupation = true; isValid = false; }
+        
+        if (!isValid) {
+          alert('Por favor, preencha todos os campos obrigatórios destacados em vermelho.');
         }
-        return true;
+        break;
       case 2:
         if (!formData.irregularities || formData.irregularities.length === 0) {
+          newErrors.irregularities = true;
+          isValid = false;
           alert('Por favor, selecione pelo menos uma irregularidade.');
-          return false;
         }
-        return true;
+        break;
       case 3:
-        if (!formData.responsible?.name || !formData.responsible?.email || !formData.responsible?.cpf) {
-          alert('Por favor, preencha todos os campos do responsável.');
-          return false;
+        if (!formData.responsible?.name) { newErrors.responsibleName = true; isValid = false; }
+        if (!formData.responsible?.email || formData.responsible.email === '@') { newErrors.responsibleEmail = true; isValid = false; }
+        if (!formData.responsible?.cpf) { newErrors.responsibleCpf = true; isValid = false; }
+        
+        formData.inspectors?.forEach((inspector, idx) => {
+          if (!inspector.name) { newErrors[`inspectorName_${idx}`] = true; isValid = false; }
+          if (!inspector.rank) { newErrors[`inspectorRank_${idx}`] = true; isValid = false; }
+          if (!inspector.registration) { newErrors[`inspectorRegistration_${idx}`] = true; isValid = false; }
+        });
+
+        if (!isValid) {
+          alert('Por favor, preencha todos os campos obrigatórios destacados em vermelho.');
         }
-        const allInspectorsValid = formData.inspectors?.every(i => i.name && i.rank && i.registration);
-        if (!allInspectorsValid) {
-          alert('Por favor, preencha todos os campos de todos os vistoriantes.');
-          return false;
-        }
-        return true;
+        break;
       case 5:
         const allInspectorsSigned = formData.signatures?.inspectors?.every(sig => sig && sig.length > 0);
         if (!allInspectorsSigned || formData.signatures?.inspectors?.length !== formData.inspectors?.length) {
           alert('Todos os vistoriantes devem assinar.');
-          return false;
+          isValid = false;
         }
-        return true;
-      default:
-        return true;
+        break;
     }
+
+    setErrors(newErrors);
+    return isValid;
   };
 
-  const handleBack = () => setStep(prev => prev - 1);
+  const handleBack = () => {
+    setStep(prev => prev - 1);
+    setErrors({});
+  };
 
   const saveResponsibleSignature = () => {
     if (responsibleSigRef.current && !responsibleSigRef.current.isEmpty()) {
@@ -528,10 +549,16 @@ export default function App() {
                           type="text"
                           value={formData.preNumber}
                           onChange={(e) => updateFormData('preNumber', e.target.value.replace(/PRÉ/gi, 'PRE'))}
-                          className="flex-1 p-3 bg-stone-50 border border-stone-200 rounded-l-xl focus:ring-2 focus:ring-red-500 outline-none"
+                          className={cn(
+                            "flex-1 p-3 bg-stone-50 border border-stone-200 rounded-l-xl focus:ring-2 focus:ring-red-500 outline-none",
+                            errors.preNumber && "border-red-500 ring-2 ring-red-200"
+                          )}
                           placeholder="0000"
                         />
-                        <span className="bg-stone-200 px-4 py-3 border border-l-0 border-stone-200 rounded-r-xl font-bold text-stone-600">/PRE</span>
+                        <span className={cn(
+                          "bg-stone-200 px-4 py-3 border border-l-0 border-stone-200 rounded-r-xl font-bold text-stone-600",
+                          errors.preNumber && "border-red-500"
+                        )}>/PRE</span>
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -540,7 +567,10 @@ export default function App() {
                         type="text"
                         value={formData.notificationNumber}
                         onChange={(e) => updateFormData('notificationNumber', maskNotification(e.target.value))}
-                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                        className={cn(
+                          "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
+                          errors.notificationNumber && "border-red-500 ring-2 ring-red-200"
+                        )}
                         placeholder="00000000/NOT/0000000.0000/PRE"
                       />
                     </div>
@@ -562,7 +592,10 @@ export default function App() {
                         type="text"
                         value={formData.company?.pscip}
                         onChange={(e) => updateNestedField('company', 'pscip', e.target.value)}
-                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                        className={cn(
+                          "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
+                          errors.pscip && "border-red-500 ring-2 ring-red-200"
+                        )}
                         placeholder="Nº do Processo"
                       />
                     </div>
@@ -572,7 +605,10 @@ export default function App() {
                         type="text"
                         value={formData.company?.name}
                         onChange={(e) => updateNestedField('company', 'name', e.target.value)}
-                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                        className={cn(
+                          "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
+                          errors.companyName && "border-red-500 ring-2 ring-red-200"
+                        )}
                         placeholder="Ex: Mercado Silva LTDA"
                       />
                     </div>
@@ -582,7 +618,10 @@ export default function App() {
                         type="text"
                         value={formData.company?.cnpj}
                         onChange={(e) => updateNestedField('company', 'cnpj', maskCPFOrCNPJ(e.target.value))}
-                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                        className={cn(
+                          "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
+                          errors.companyCnpj && "border-red-500 ring-2 ring-red-200"
+                        )}
                         placeholder="00.000.000/0000-00"
                       />
                     </div>
@@ -590,7 +629,10 @@ export default function App() {
                       <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">OCUPAÇÃO (Selecione uma ou mais)</label>
                       <div 
                         onClick={() => setIsOccupationDropdownOpen(!isOccupationDropdownOpen)}
-                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl flex justify-between items-center cursor-pointer hover:border-stone-300 transition-colors"
+                        className={cn(
+                          "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl flex justify-between items-center cursor-pointer hover:border-stone-300 transition-colors",
+                          errors.companyOccupation && "border-red-500 ring-2 ring-red-200"
+                        )}
                       >
                         <span className="text-sm text-stone-600">
                           {formData.company?.occupation && formData.company.occupation.length > 0 
@@ -647,7 +689,10 @@ export default function App() {
                         type="text"
                         value={formData.company?.street}
                         onChange={(e) => updateNestedField('company', 'street', e.target.value)}
-                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                        className={cn(
+                          "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
+                          errors.companyStreet && "border-red-500 ring-2 ring-red-200"
+                        )}
                         placeholder="Rua, Avenida, etc."
                       />
                     </div>
@@ -657,7 +702,10 @@ export default function App() {
                         type="text"
                         value={formData.company?.number}
                         onChange={(e) => updateNestedField('company', 'number', e.target.value)}
-                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                        className={cn(
+                          "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
+                          errors.companyNumber && "border-red-500 ring-2 ring-red-200"
+                        )}
                         placeholder="123"
                       />
                     </div>
@@ -667,7 +715,10 @@ export default function App() {
                         type="text"
                         value={formData.company?.neighborhood}
                         onChange={(e) => updateNestedField('company', 'neighborhood', e.target.value)}
-                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                        className={cn(
+                          "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
+                          errors.companyNeighborhood && "border-red-500 ring-2 ring-red-200"
+                        )}
                         placeholder="Centro"
                       />
                     </div>
@@ -677,7 +728,10 @@ export default function App() {
                         type="text"
                         value={formData.company?.phone}
                         onChange={(e) => updateNestedField('company', 'phone', maskPhone(e.target.value))}
-                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                        className={cn(
+                          "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
+                          errors.companyPhone && "border-red-500 ring-2 ring-red-200"
+                        )}
                         placeholder="(00) 00000-0000"
                       />
                     </div>
@@ -698,7 +752,10 @@ export default function App() {
                   </div>
                   <div className="space-y-3">
                     <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Selecione as Irregularidades Encontradas</label>
-                    <div className="space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                    <div className={cn(
+                      "space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar p-1 rounded-xl",
+                      errors.irregularities && "border-2 border-red-500 bg-red-50"
+                    )}>
                       {IRREGULARITIES_LIST.map((item) => (
                         <div 
                           key={item}
@@ -776,7 +833,10 @@ export default function App() {
                           type="text"
                           value={formData.responsible?.name}
                           onChange={(e) => updateNestedField('responsible', 'name', e.target.value)}
-                          className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                          className={cn(
+                            "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
+                            errors.responsibleName && "border-red-500 ring-2 ring-red-200"
+                          )}
                           placeholder="Nome do responsável"
                         />
                       </div>
@@ -796,7 +856,10 @@ export default function App() {
                             }
                             updateNestedField('responsible', 'email', val);
                           }}
-                          className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                          className={cn(
+                            "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
+                            errors.responsibleEmail && "border-red-500 ring-2 ring-red-200"
+                          )}
                           placeholder="email@exemplo.com"
                         />
                       </div>
@@ -806,7 +869,10 @@ export default function App() {
                           type="text"
                           value={formData.responsible?.cpf}
                           onChange={(e) => updateNestedField('responsible', 'cpf', maskCPF(e.target.value))}
-                          className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                          className={cn(
+                            "w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
+                            errors.responsibleCpf && "border-red-500 ring-2 ring-red-200"
+                          )}
                           placeholder="000.000.000-00"
                         />
                       </div>
@@ -847,7 +913,10 @@ export default function App() {
                               newInspectors[index].name = e.target.value;
                               updateFormData('inspectors', newInspectors);
                             }}
-                            className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                            className={cn(
+                              "w-full p-3 bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
+                              errors[`inspectorName_${index}`] && "border-red-500 ring-2 ring-red-200"
+                            )}
                             placeholder="Nome do militar"
                           />
                         </div>
@@ -861,7 +930,10 @@ export default function App() {
                               newInspectors[index].registration = e.target.value;
                               updateFormData('inspectors', newInspectors);
                             }}
-                            className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                            className={cn(
+                              "w-full p-3 bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none",
+                              errors[`inspectorRegistration_${index}`] && "border-red-500 ring-2 ring-red-200"
+                            )}
                             placeholder="000.000-0"
                           />
                         </div>
@@ -874,7 +946,10 @@ export default function App() {
                               newInspectors[index].rank = e.target.value;
                               updateFormData('inspectors', newInspectors);
                             }}
-                            className="w-full p-3 bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none appearance-none"
+                            className={cn(
+                              "w-full p-3 bg-white border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none appearance-none",
+                              errors[`inspectorRank_${index}`] && "border-red-500 ring-2 ring-red-200"
+                            )}
                           >
                             <option value="">Selecione</option>
                             {INSPECTOR_RANKS.map(rank => (
@@ -1020,7 +1095,7 @@ export default function App() {
                       <div className="flex justify-between items-center pb-6 mb-8 border-b-4 border-black">
                         <img 
                           src={`/api/proxy-image?url=${encodeURIComponent('https://www.bombeiros.ms.gov.br/wp-content/uploads/2015/01/Bras%C3%A3o_estilizado_tipo_texto._jpg.jpg')}`} 
-                          className="w-[60px] h-[60px] object-contain" 
+                          className="w-[100px] h-[100px] object-contain" 
                           alt="Logo CBMMS" 
                           crossOrigin="anonymous"
                         />
