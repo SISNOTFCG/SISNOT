@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { 
   ClipboardCheck, 
   Building2, 
@@ -265,6 +266,7 @@ export default function App() {
       await addSection('pdf-section-data');
       await addSection('pdf-section-deadline');
       await addIrregularities();
+      await addSection('pdf-section-return');
       await addSection('pdf-section-signatures');
 
       // Finalize PDF: Add page numbers and footer
@@ -1008,6 +1010,23 @@ export default function App() {
                                 <span className="text-[11px] font-medium pt-0.5 text-stone-800">{i}</span>
                               </div>
                             ))}
+                          </div>
+                        </div>
+
+                        <div id="pdf-section-return" className="rounded-xl border border-stone-200 p-5 bg-stone-50 flex items-center gap-6">
+                          <div className="flex-1 space-y-2">
+                            <p className="text-[11px] leading-relaxed text-stone-700 font-medium">
+                              Ao cumprir todas as exigências desta notificação, acesse o site <span className="text-red-600 font-bold">https://prevenir.bombeiros.ms.gov.br</span> aba <span className="font-bold">"ATENDIMENTO TÉCNICO"</span> e solicite o retorno de vistoria para esta edificação.
+                            </p>
+                          </div>
+                          <div className="shrink-0 bg-white p-2 rounded-lg border border-stone-200 shadow-sm">
+                            <QRCodeSVG 
+                              value="https://prevenir.bombeiros.ms.gov.br/"
+                              size={80}
+                              level="H"
+                              includeMargin={false}
+                            />
+                            <p className="text-[8px] text-center mt-1 font-bold text-stone-400 uppercase tracking-tighter">Acesse o Prevenir</p>
                           </div>
                         </div>
 
