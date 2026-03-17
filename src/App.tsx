@@ -132,7 +132,52 @@ export default function App() {
     }
   };
 
-  const handleNext = () => setStep(prev => prev + 1);
+  const handleNext = () => {
+    if (validateStep(step)) {
+      setStep(prev => prev + 1);
+    }
+  };
+
+  const validateStep = (currentStep: number) => {
+    switch (currentStep) {
+      case 1:
+        if (!formData.preNumber || !formData.notificationNumber || !formData.company?.pscip || 
+            !formData.company?.name || !formData.company?.cnpj || !formData.company?.street || 
+            !formData.company?.number || !formData.company?.neighborhood || !formData.company?.phone ||
+            !formData.company?.occupation || formData.company.occupation.length === 0) {
+          alert('Por favor, preencha todos os campos obrigatórios da empresa.');
+          return false;
+        }
+        return true;
+      case 2:
+        if (!formData.irregularities || formData.irregularities.length === 0) {
+          alert('Por favor, selecione pelo menos uma irregularidade.');
+          return false;
+        }
+        return true;
+      case 3:
+        if (!formData.responsible?.name || !formData.responsible?.email || !formData.responsible?.cpf) {
+          alert('Por favor, preencha todos os campos do responsável.');
+          return false;
+        }
+        const allInspectorsValid = formData.inspectors?.every(i => i.name && i.rank && i.registration);
+        if (!allInspectorsValid) {
+          alert('Por favor, preencha todos os campos de todos os vistoriantes.');
+          return false;
+        }
+        return true;
+      case 5:
+        const allInspectorsSigned = formData.signatures?.inspectors?.every(sig => sig && sig.length > 0);
+        if (!allInspectorsSigned || formData.signatures?.inspectors?.length !== formData.inspectors?.length) {
+          alert('Todos os vistoriantes devem assinar.');
+          return false;
+        }
+        return true;
+      default:
+        return true;
+    }
+  };
+
   const handleBack = () => setStep(prev => prev - 1);
 
   const saveResponsibleSignature = () => {
@@ -144,7 +189,9 @@ export default function App() {
           responsible: responsibleSigRef.current?.toDataURL() || ''
         }
       }));
-      handleNext();
+      setStep(prev => prev + 1);
+    } else {
+      alert('O responsável deve assinar para prosseguir.');
     }
   };
 
@@ -973,29 +1020,29 @@ export default function App() {
                       <div className="flex justify-between items-center pb-6 mb-8 border-b-4 border-black">
                         <img 
                           src={`/api/proxy-image?url=${encodeURIComponent('https://www.bombeiros.ms.gov.br/wp-content/uploads/2015/01/Bras%C3%A3o_estilizado_tipo_texto._jpg.jpg')}`} 
-                          className="w-32 h-20 object-contain" 
+                          className="w-[60px] h-[60px] object-contain" 
                           alt="Logo CBMMS" 
                           crossOrigin="anonymous"
                         />
                         <div className="text-center flex-1 px-6">
-                          <p className="text-xs font-black uppercase tracking-tighter text-black">Estado de Mato Grosso do Sul</p>
-                          <p className="text-xs font-bold uppercase text-black">Secretaria de Estado de Justiça e Segurança Pública</p>
-                          <p className="text-xl font-black uppercase mt-1 text-black">Corpo de Bombeiros Militar</p>
-                          <p className="text-xs font-bold text-black">3º SGBM / 2º GBM - Maracaju - MS</p>
+                          <p className="text-[11.5px] font-black uppercase tracking-tighter text-black">Estado de Mato Grosso do Sul</p>
+                          <p className="text-[11.5px] font-bold uppercase text-black">Secretaria de Estado de Justiça e Segurança Pública</p>
+                          <p className="text-[19.5px] font-black uppercase mt-1 text-black">Corpo de Bombeiros Militar</p>
+                          <p className="text-[11.5px] font-bold text-black">3º SGBM / 2º GBM - Maracaju - MS</p>
                         </div>
                         <div className="w-20"></div>
                       </div>
 
                       <div className="flex justify-between items-stretch mb-8 rounded-lg overflow-hidden border border-black bg-white">
                         <div className="flex-1 p-4 border-r border-black">
-                          <h1 className="text-4xl font-black uppercase leading-none text-black">NOTIFICAÇÃO</h1>
-                          <p className="text-sm font-bold mt-1 text-black">EXIGÊNCIA DE VISTORIA TÉCNICA</p>
+                          <h1 className="text-[35.5px] font-black uppercase leading-none text-black">NOTIFICAÇÃO</h1>
+                          <p className="text-[13.5px] font-bold mt-1 text-black">EXIGÊNCIA DE VISTORIA TÉCNICA</p>
                         </div>
                         <div className="p-4 bg-white min-w-[220px] flex flex-col justify-center">
-                          <p className="text-xs font-black uppercase tracking-widest mb-1 text-black">Identificação</p>
-                          <p className="text-sm font-black text-black">PRE: {formData.preNumber}/PRE</p>
-                          <p className="text-sm font-black text-black">Nº NOTIFICAÇÃO: {formData.notificationNumber}</p>
-                          <div className="flex gap-4 mt-2 text-xs font-bold text-black">
+                          <p className="text-[11.5px] font-black uppercase tracking-widest mb-1 text-black">Identificação</p>
+                          <p className="text-[13.5px] font-black text-black">PRE: {formData.preNumber}/PRE</p>
+                          <p className="text-[13.5px] font-black text-black">Nº NOTIFICAÇÃO: {formData.notificationNumber}</p>
+                          <div className="flex gap-4 mt-2 text-[11.5px] font-bold text-black">
                             <span>{format(new Date(), "dd/MM/yyyy")}</span>
                             <span>{format(new Date(), "HH:mm")}</span>
                           </div>
@@ -1006,8 +1053,8 @@ export default function App() {
                     <div ref={pdfBodyRef} className="w-[210mm] p-12 pt-0 font-sans text-black bg-white">
                       <div className="space-y-6">
                         <div id="pdf-section-data" className="rounded-xl border border-black overflow-hidden">
-                          <div className="text-white px-4 py-2 text-xs font-black uppercase tracking-widest bg-black">Dados da Edificação / Evento</div>
-                          <div className="p-4 grid grid-cols-2 gap-y-3 gap-x-6 text-sm">
+                          <div className="text-white px-4 py-2 text-[11.5px] font-black uppercase tracking-widest bg-black">Dados da Edificação / Evento</div>
+                          <div className="p-4 grid grid-cols-2 gap-y-3 gap-x-6 text-[13.5px]">
                             <div className="col-span-2 flex border-b border-[#f5f5f4] pb-1">
                               <span className="font-black uppercase w-32 text-black">Razão Social:</span>
                               <span className="font-bold text-black">{formData.company?.name}</span>
@@ -1040,10 +1087,10 @@ export default function App() {
                         </div>
 
                         <div id="pdf-section-deadline" className="rounded-xl border-2 border-black p-5 bg-white">
-                          <h2 className="text-sm font-black uppercase mb-3 flex items-center gap-2 text-black">
+                          <h2 className="text-[13.5px] font-black uppercase mb-3 flex items-center gap-2 text-black">
                             <AlertTriangle size={14} /> PRAZO PARA CUMPRIMENTO
                           </h2>
-                          <div className="space-y-3 text-sm leading-relaxed text-black">
+                          <div className="space-y-3 text-[13.5px] leading-relaxed text-black">
                             <p>Em conformidade com a <strong>Lei Estadual nº 4.335/2013</strong>, Vossa Senhoria deverá cumprir as exigências listadas abaixo no prazo de <span className="text-black font-black underline decoration-2 underline-offset-4">{formData.deadlineDays} DIAS</span>, a contar da data de recebimento deste documento.</p>
                             <p className="text-black font-bold">O prazo para cumprimento desta notificação se encerra em: {formData.date && formData.deadlineDays ? format(addDays(new Date(formData.date), formData.deadlineDays), "dd/MM/yyyy") : format(addDays(new Date(), 30), "dd/MM/yyyy")}</p>
                             <p className="font-bold text-black">O não cumprimento desta notificação sujeita o infrator à multa, interdição ou outras penalidades previstas em Lei.</p>
@@ -1052,12 +1099,12 @@ export default function App() {
                         </div>
 
                         <div id="pdf-section-irregularities" className="rounded-xl border border-black overflow-hidden">
-                          <div className="text-white px-4 py-2 text-xs font-black uppercase tracking-widest bg-black">Exigências Técnicas a Cumprir</div>
+                          <div className="text-white px-4 py-2 text-[11.5px] font-black uppercase tracking-widest bg-black">Exigências Técnicas a Cumprir</div>
                           <div className="p-6 space-y-1">
                             {formData.irregularities?.map((i, idx) => (
                               <div key={idx} className="pdf-irregularity-item flex gap-4 items-start border-b border-[#fafaf9] pb-1 last:border-0" style={{ lineHeight: '1.15' }}>
-                                <span className="flex items-center justify-center w-5 h-5 rounded-full font-black text-xs shrink-0 bg-[#f5f5f4] text-[#1c1917]">{idx + 1}</span>
-                                <span className="text-sm font-medium pt-0.5 text-[#292524]">{i}</span>
+                                <span className="flex items-center justify-center w-5 h-5 rounded-full font-black text-[11.5px] shrink-0 bg-[#f5f5f4] text-[#1c1917]">{idx + 1}</span>
+                                <span className="text-[13.5px] font-medium pt-0.5 text-[#292524]">{i}</span>
                               </div>
                             ))}
                           </div>
@@ -1065,7 +1112,7 @@ export default function App() {
 
                         <div id="pdf-section-return" className="rounded-xl border border-black p-5 bg-white flex items-center gap-6">
                           <div className="flex-1 space-y-2">
-                            <p className="text-sm leading-relaxed text-black font-medium">
+                            <p className="text-[13.5px] leading-relaxed text-black font-medium">
                               Ao cumprir todas as exigências desta notificação, acesse o site <span className="text-[#2563eb] font-bold underline">https://prevenir.bombeiros.ms.gov.br</span> aba <span className="font-bold">"ATENDIMENTO TÉCNICO"</span> e solicite o retorno de vistoria para esta edificação.
                             </p>
                           </div>
@@ -1076,7 +1123,7 @@ export default function App() {
                               level="H"
                               includeMargin={false}
                             />
-                            <p className="text-xs text-center mt-1 font-bold text-black uppercase tracking-tighter">Acesse o Prevenir</p>
+                            <p className="text-[11.5px] text-center mt-1 font-bold text-black uppercase tracking-tighter">Acesse o Prevenir</p>
                           </div>
                         </div>
 
@@ -1086,9 +1133,9 @@ export default function App() {
                               {formData.signatures?.responsible && <img src={formData.signatures.responsible} className="max-h-full grayscale" alt="Assinatura Responsável" />}
                             </div>
                             <div>
-                              <p className="text-sm font-black uppercase text-black">{formData.responsible?.name}</p>
-                              <p className="text-xs font-bold uppercase text-black">CPF: {formData.responsible?.cpf}</p>
-                              <p className="text-xs font-bold uppercase tracking-widest text-black">Responsável pelo Local</p>
+                              <p className="text-[13.5px] font-black uppercase text-black">{formData.responsible?.name}</p>
+                              <p className="text-[11.5px] font-bold uppercase text-black">CPF: {formData.responsible?.cpf}</p>
+                              <p className="text-[11.5px] font-bold uppercase tracking-widest text-black">Responsável pelo Local</p>
                             </div>
                           </div>
                           <div className="space-y-8">
@@ -1098,9 +1145,9 @@ export default function App() {
                                   {formData.signatures?.inspectors?.[index] && <img src={formData.signatures.inspectors[index]} className="max-h-full grayscale" alt={`Assinatura Vistoriante ${index + 1}`} />}
                                 </div>
                                 <div>
-                                  <p className="text-sm font-black uppercase text-black">{inspector.rank} {inspector.name}</p>
-                                  <p className="text-xs font-bold uppercase text-black">Matrícula: {inspector.registration}</p>
-                                  <p className="text-xs font-bold uppercase tracking-widest text-black">Vistoriante do CBMMS</p>
+                                  <p className="text-[13.5px] font-black uppercase text-black">{inspector.rank} {inspector.name}</p>
+                                  <p className="text-[11.5px] font-bold uppercase text-black">Matrícula: {inspector.registration}</p>
+                                  <p className="text-[11.5px] font-bold uppercase tracking-widest text-black">Vistoriante do CBMMS</p>
                                 </div>
                               </div>
                             ))}
