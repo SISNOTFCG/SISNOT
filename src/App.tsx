@@ -923,7 +923,7 @@ export default function App() {
                     <div ref={pdfHeaderRef} className="w-[210mm] p-12 pb-0 font-sans text-stone-900 bg-white">
                       <div className="flex justify-between items-center pb-6 mb-8 border-b-4 border-stone-900">
                         <img 
-                          src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Bras%C3%A3o_do_Corpo_de_Bombeiros_Militar_do_Estado_do_Mato_Grosso_do_Sul.png/200px-Bras%C3%A3o_do_Corpo_de_Bombeiros_Militar_do_Estado_do_Mato_Grosso_do_Sul.png" 
+                          src="https://lh3.googleusercontent.com/d/1D8X_R_8_8_8_8_8_8_8_8_8_8_8_8_8_8_8" 
                           className="w-20 h-20 object-contain" 
                           alt="Logo CBMMS" 
                           referrerPolicy="no-referrer"
