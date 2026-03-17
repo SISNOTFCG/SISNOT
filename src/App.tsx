@@ -165,8 +165,10 @@ export default function App() {
   };
 
   const generatePDF = async () => {
+    console.log('Starting PDF generation...');
     if (!pdfHeaderRef.current || !pdfBodyRef.current) {
       console.error('PDF refs not found');
+      alert('Erro interno: Referências do PDF não encontradas.');
       return;
     }
     
@@ -178,11 +180,14 @@ export default function App() {
       const bottomMargin = 20;
       const sidePadding = 12;
       
+      console.log('Capturing header...');
       // 1. Capture Header
       const headerCanvas = await html2canvas(pdfHeaderRef.current, {
-        scale: 2,
+        scale: 1.5,
         useCORS: true,
-        backgroundColor: '#ffffff'
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        logging: true
       });
       const headerImgData = headerCanvas.toDataURL('image/png');
       const headerWidth = pageWidth;
@@ -197,12 +202,17 @@ export default function App() {
 
       // Helper to add a section to the PDF
       const addSection = async (elementId: string) => {
+        console.log(`Capturing section: ${elementId}`);
         const element = document.getElementById(elementId);
-        if (!element) return;
+        if (!element) {
+          console.warn(`Element not found: ${elementId}`);
+          return;
+        }
         
         const canvas = await html2canvas(element, { 
           scale: 1.5, 
           useCORS: true,
+          allowTaint: true,
           backgroundColor: '#ffffff',
           logging: false
         });
@@ -222,6 +232,7 @@ export default function App() {
 
       // Special handling for irregularities to avoid cutting text
       const addIrregularities = async () => {
+        console.log('Capturing irregularities...');
         const container = document.getElementById('pdf-section-irregularities');
         if (!container) return;
 
@@ -231,7 +242,8 @@ export default function App() {
           const canvas = await html2canvas(titleElement as HTMLElement, { 
             scale: 1.5, 
             backgroundColor: '#ffffff',
-            useCORS: true
+            useCORS: true,
+            allowTaint: true
           });
           const imgWidth = pageWidth - (sidePadding * 2);
           const imgHeight = (canvas.height * imgWidth) / canvas.width;
@@ -251,7 +263,8 @@ export default function App() {
           const canvas = await html2canvas(item as HTMLElement, { 
             scale: 1.5, 
             backgroundColor: '#ffffff',
-            useCORS: true
+            useCORS: true,
+            allowTaint: true
           });
           const imgWidth = pageWidth - (sidePadding * 2);
           const imgHeight = (canvas.height * imgWidth) / canvas.width;
@@ -272,45 +285,61 @@ export default function App() {
       addHeaderAndPageNumber(1);
 
       // Add sections in order
-      await addSection('pdf-section-data');
-      await addSection('pdf-section-deadline');
-      await addIrregularities();
-      await addSection('pdf-section-return');
-      await addSection('pdf-section-signatures');
+      try {
+        await addSection('pdf-section-data');
+        await addSection('pdf-section-deadline');
+        await addIrregularities();
+        await addSection('pdf-section-return');
+        await addSection('pdf-section-signatures');
+      } catch (sectionError) {
+        console.error('Error adding sections to PDF:', sectionError);
+        throw sectionError;
+      }
 
       // Finalize PDF: Add page numbers and footer
+      console.log('Finalizing PDF...');
       const totalPages = currentPage;
       for (let i = 1; i <= totalPages; i++) {
-        pdf.setPage(i);
-        
-        // Add Page Number (e.g. 1/3)
-        pdf.setFontSize(10);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(0, 0, 0);
-        pdf.text(`${i}/${totalPages}`, 185, 48);
-        
-        // Add Footer only on last page
-        if (i === totalPages) {
-          pdf.setFontSize(9);
-          pdf.setTextColor(100, 100, 100);
-          const footerLines = [
-            "CORPO DE BOMBEIROS MILITAR DE MARACAJU-MS",
-            "Rua Apa, 21 - Bairro Centro - CEP 79150-047",
-            "Email: maracaju.sat@cbm.ms.gov.br",
-            "Telefone (whatsapp): (67) 3454-4141"
-          ];
+        try {
+          pdf.setPage(i);
           
-          let y = pageHeight - 15;
-          footerLines.forEach(line => {
-            const textWidth = pdf.getTextWidth(line);
-            pdf.text(line, (pageWidth - textWidth) / 2, y);
-            y += 4;
-          });
+          // Add Page Number (e.g. 1/3)
+          pdf.setFontSize(10);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setTextColor(0, 0, 0);
+          pdf.text(`${i}/${totalPages}`, 185, 48);
+          
+          // Add Footer only on last page
+          if (i === totalPages) {
+            pdf.setFontSize(9);
+            pdf.setTextColor(100, 100, 100);
+            const footerLines = [
+              "CORPO DE BOMBEIROS MILITAR DE MARACAJU-MS",
+              "Rua Apa, 21 - Bairro Centro - CEP 79150-047",
+              "Email: maracaju.sat@cbm.ms.gov.br",
+              "Telefone (whatsapp): (67) 3454-4141"
+            ];
+            
+            let y = pageHeight - 15;
+            footerLines.forEach(line => {
+              const textWidth = pdf.getTextWidth(line);
+              pdf.text(line, (pageWidth - textWidth) / 2, y);
+              y += 4;
+            });
+          }
+        } catch (pageError) {
+          console.error(`Error processing page ${i}:`, pageError);
         }
       }
       
       console.log('PDF generated successfully. Saving and sending...');
-      const pdfBase64 = pdf.output('datauristring').split(',')[1];
+      let pdfBase64 = '';
+      try {
+        pdfBase64 = pdf.output('datauristring').split(',')[1];
+      } catch (outputError) {
+        console.error('Error generating PDF output string:', outputError);
+        throw outputError;
+      }
       
       // Save locally for the user
       const fileName = `NOT ${formData.notificationNumber} - ${formData.company?.name || 'documento'}.pdf`.replace(/\//g, '_');
@@ -936,7 +965,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="fixed left-[-9999px] top-0">
+                  <div className="absolute top-0 left-0 -z-50 opacity-0 pointer-events-none overflow-hidden h-0">
                     <div ref={pdfHeaderRef} className="w-[210mm] p-12 pb-0 font-sans text-black bg-white">
                       <div className="flex justify-between items-center pb-6 mb-8 border-b-4 border-black">
                         <img 
@@ -944,6 +973,7 @@ export default function App() {
                           className="w-32 h-20 object-contain" 
                           alt="Logo CBMMS" 
                           referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
                         />
                         <div className="text-center flex-1 px-6">
                           <p className="text-xs font-black uppercase tracking-tighter text-black">Estado de Mato Grosso do Sul</p>
