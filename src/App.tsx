@@ -174,6 +174,9 @@ export default function App() {
     
     setIsSubmitting(true);
     try {
+      // Small delay to ensure images are loaded
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = 210;
       const pageHeight = 297;
@@ -969,10 +972,9 @@ export default function App() {
                     <div ref={pdfHeaderRef} className="w-[210mm] p-12 pb-0 font-sans text-black bg-white">
                       <div className="flex justify-between items-center pb-6 mb-8 border-b-4 border-black">
                         <img 
-                          src="https://www.bombeiros.ms.gov.br/wp-content/uploads/2015/01/Bras%C3%A3o_estilizado_tipo_texto._jpg.jpg" 
+                          src={`/api/proxy-image?url=${encodeURIComponent('https://www.bombeiros.ms.gov.br/wp-content/uploads/2015/01/Bras%C3%A3o_estilizado_tipo_texto._jpg.jpg')}`} 
                           className="w-32 h-20 object-contain" 
                           alt="Logo CBMMS" 
-                          referrerPolicy="no-referrer"
                           crossOrigin="anonymous"
                         />
                         <div className="text-center flex-1 px-6">
@@ -1006,31 +1008,31 @@ export default function App() {
                         <div id="pdf-section-data" className="rounded-xl border border-black overflow-hidden">
                           <div className="text-white px-4 py-2 text-xs font-black uppercase tracking-widest bg-black">Dados da Edificação / Evento</div>
                           <div className="p-4 grid grid-cols-2 gap-y-3 gap-x-6 text-sm">
-                            <div className="col-span-2 flex border-b border-stone-100 pb-1">
+                            <div className="col-span-2 flex border-b border-[#f5f5f4] pb-1">
                               <span className="font-black uppercase w-32 text-black">Razão Social:</span>
                               <span className="font-bold text-black">{formData.company?.name}</span>
                             </div>
-                            <div className="flex border-b border-stone-100 pb-1">
+                            <div className="flex border-b border-[#f5f5f4] pb-1">
                               <span className="font-black uppercase w-32 text-black">CNPJ/CPF:</span>
                               <span className="font-bold text-black">{formData.company?.cnpj}</span>
                             </div>
-                            <div className="flex border-b border-stone-100 pb-1">
+                            <div className="flex border-b border-[#f5f5f4] pb-1">
                               <span className="font-black uppercase w-32 text-black">Nº PSCIP:</span>
                               <span className="font-bold text-black">{formData.company?.pscip}</span>
                             </div>
-                            <div className="flex border-b border-stone-100 pb-1">
+                            <div className="flex border-b border-[#f5f5f4] pb-1">
                               <span className="font-black uppercase w-32 text-black">Responsável:</span>
                               <span className="font-bold text-black">{formData.responsible?.name}</span>
                             </div>
-                            <div className="flex border-b border-stone-100 pb-1">
+                            <div className="flex border-b border-[#f5f5f4] pb-1">
                               <span className="font-black uppercase w-32 text-black">Ocupação:</span>
                               <span className="font-bold text-black">{formData.company?.occupation?.join(', ')}</span>
                             </div>
-                            <div className="col-span-2 flex border-b border-stone-100 pb-1">
+                            <div className="col-span-2 flex border-b border-[#f5f5f4] pb-1">
                               <span className="font-black uppercase w-32 text-black">Endereço:</span>
                               <span className="font-bold text-black">{formData.company?.street}, {formData.company?.number} - {formData.company?.neighborhood}</span>
                             </div>
-                            <div className="flex border-b border-stone-100 pb-1">
+                            <div className="flex border-b border-[#f5f5f4] pb-1">
                               <span className="font-black uppercase w-32 text-black">Telefone:</span>
                               <span className="font-bold text-black">{formData.company?.phone}</span>
                             </div>
@@ -1053,9 +1055,9 @@ export default function App() {
                           <div className="text-white px-4 py-2 text-xs font-black uppercase tracking-widest bg-black">Exigências Técnicas a Cumprir</div>
                           <div className="p-6 space-y-1">
                             {formData.irregularities?.map((i, idx) => (
-                              <div key={idx} className="pdf-irregularity-item flex gap-4 items-start border-b border-stone-50 pb-1 last:border-0" style={{ lineHeight: '1.15' }}>
-                                <span className="flex items-center justify-center w-5 h-5 rounded-full font-black text-xs shrink-0 bg-stone-100 text-stone-900">{idx + 1}</span>
-                                <span className="text-sm font-medium pt-0.5 text-stone-800">{i}</span>
+                              <div key={idx} className="pdf-irregularity-item flex gap-4 items-start border-b border-[#fafaf9] pb-1 last:border-0" style={{ lineHeight: '1.15' }}>
+                                <span className="flex items-center justify-center w-5 h-5 rounded-full font-black text-xs shrink-0 bg-[#f5f5f4] text-[#1c1917]">{idx + 1}</span>
+                                <span className="text-sm font-medium pt-0.5 text-[#292524]">{i}</span>
                               </div>
                             ))}
                           </div>
@@ -1064,7 +1066,7 @@ export default function App() {
                         <div id="pdf-section-return" className="rounded-xl border border-black p-5 bg-white flex items-center gap-6">
                           <div className="flex-1 space-y-2">
                             <p className="text-sm leading-relaxed text-black font-medium">
-                              Ao cumprir todas as exigências desta notificação, acesse o site <span className="text-blue-600 font-bold underline">https://prevenir.bombeiros.ms.gov.br</span> aba <span className="font-bold">"ATENDIMENTO TÉCNICO"</span> e solicite o retorno de vistoria para esta edificação.
+                              Ao cumprir todas as exigências desta notificação, acesse o site <span className="text-[#2563eb] font-bold underline">https://prevenir.bombeiros.ms.gov.br</span> aba <span className="font-bold">"ATENDIMENTO TÉCNICO"</span> e solicite o retorno de vistoria para esta edificação.
                             </p>
                           </div>
                           <div className="shrink-0 bg-white p-2 rounded-lg border border-black shadow-sm">
