@@ -439,7 +439,7 @@ export default function App() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">NOT. NOTIFICAÇÃO</label>
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Nº NOTIFICAÇÃO</label>
                       <input 
                         type="text"
                         value={formData.notificationNumber}
@@ -945,7 +945,7 @@ export default function App() {
                         <div className="p-4 bg-white min-w-[220px] flex flex-col justify-center">
                           <p className="text-[10px] font-black uppercase tracking-widest mb-1 text-black">Identificação</p>
                           <p className="text-xs font-black text-black">PRE: {formData.preNumber}/PRE</p>
-                          <p className="text-xs font-black text-black">NOT. NOTIFICAÇÃO: {formData.notificationNumber}</p>
+                          <p className="text-xs font-black text-black">Nº NOTIFICAÇÃO: {formData.notificationNumber}</p>
                           <div className="flex gap-4 mt-2 text-[10px] font-bold text-black">
                             <span>{format(new Date(), "dd/MM/yyyy")}</span>
                             <span>{format(new Date(), "HH:mm")}</span>
