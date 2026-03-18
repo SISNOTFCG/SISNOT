@@ -20,7 +20,7 @@ import { format, addDays } from 'date-fns';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { cn } from './utils';
-import { InspectionData, IRREGULARITIES_LIST, INSPECTOR_RANKS, OCCUPATIONS_LIST } from './types';
+import { InspectionData, IRREGULARITIES_LIST, INSPECTOR_RANKS, OCCUPATIONS_LIST, GBM_OPTIONS } from './types';
 
 export default function App() {
   const [step, setStep] = useState(1);
@@ -35,10 +35,11 @@ export default function App() {
   const [formData, setFormData] = useState<Partial<InspectionData>>({
     date: new Date().toISOString(),
     type: 'NOTIFICAÇÃO',
+    unit: GBM_OPTIONS[0],
     preNumber: '',
     notificationNumber: '',
     deadlineDays: 30,
-    company: { name: '', cnpj: '', street: '', number: '', neighborhood: '', address: '', phone: '', occupation: [], pscip: '' },
+    company: { name: '', cnpj: '', street: '', number: '', neighborhood: '', address: '', phone: '', occupation: [], pscip: '', accompaniedBy: '', accompaniedByCPF: '', accompaniedByFunction: '' },
     irregularities: [],
     responsible: { name: '', email: '@', cpf: '' },
     inspectors: [{ name: '', rank: '', registration: '' }],
@@ -460,10 +461,11 @@ export default function App() {
     setFormData({
       date: new Date().toISOString(),
       type: 'NOTIFICAÇÃO',
+      unit: GBM_OPTIONS[0],
       preNumber: '',
       notificationNumber: '',
       deadlineDays: 30,
-      company: { name: '', cnpj: '', pscip: '', street: '', number: '', neighborhood: '', address: '', phone: '', occupation: [] },
+      company: { name: '', cnpj: '', pscip: '', street: '', number: '', neighborhood: '', address: '', phone: '', occupation: [], accompaniedBy: '', accompaniedByCPF: '', accompaniedByFunction: '' },
       irregularities: [],
       responsible: { name: '', email: '@', cpf: '' },
       inspectors: [{ name: '', rank: '', registration: '' }],
@@ -567,6 +569,18 @@ export default function App() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2 md:col-span-2">
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Unidade Bombeiro Militar <span className="text-red-500">*</span></label>
+                      <select 
+                        value={formData.unit}
+                        onChange={(e) => updateFormData('unit', e.target.value)}
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none appearance-none"
+                      >
+                        {GBM_OPTIONS.map(option => (
+                          <option key={option} value={option}>{option}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
                       <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">PRE <span className="text-red-500">*</span></label>
                       <div className="flex items-center">
                         <input 
@@ -629,6 +643,36 @@ export default function App() {
                         onChange={(e) => updateNestedField('company', 'cnpj', maskCPFOrCNPJ(e.target.value))}
                         className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
                         placeholder="00.000.000/0000-00"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Nome de quem acompanhou a vistoria</label>
+                      <input 
+                        type="text"
+                        value={formData.company?.accompaniedBy}
+                        onChange={(e) => updateNestedField('company', 'accompaniedBy', e.target.value)}
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                        placeholder="Nome Completo"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">CPF de quem acompanhou a vistoria</label>
+                      <input 
+                        type="text"
+                        value={formData.company?.accompaniedByCPF}
+                        onChange={(e) => updateNestedField('company', 'accompaniedByCPF', maskCPF(e.target.value))}
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                        placeholder="000.000.000-00"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Função de quem acompanhou a vistoria</label>
+                      <input 
+                        type="text"
+                        value={formData.company?.accompaniedByFunction}
+                        onChange={(e) => updateNestedField('company', 'accompaniedByFunction', e.target.value)}
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                        placeholder="Ex: Gerente, Proprietário, etc."
                       />
                     </div>
                     <div className="space-y-2 md:col-span-2 relative">
@@ -1064,7 +1108,7 @@ export default function App() {
                     <div ref={pdfHeaderRef} className="w-[210mm] p-12 pb-0 font-sans text-black bg-white">
                       <div className="flex justify-between items-center pb-6 mb-8 border-b-4 border-black">
                         <img 
-                          src={`/api/proxy-image?url=${encodeURIComponent('https://upload.wikimedia.org/wikipedia/pt/b/b3/Bras%C3%A3o_CBMMS.png')}`}
+                          src={`/api/proxy-image?url=${encodeURIComponent('https://www.bombeiros.ms.gov.br/wp-content/uploads/2015/01/Bras%C3%A3o_estilizado_tipo_texto._jpg.jpg')}`}
                           style={{ width: '100px', height: '100px' }}
                           className="object-contain" 
                           alt="Logo CBMMS" 
@@ -1074,7 +1118,7 @@ export default function App() {
                           <p className="text-[11px] font-black uppercase tracking-tighter text-black">Estado de Mato Grosso do Sul</p>
                           <p className="text-[11px] font-bold uppercase text-black">Secretaria de Estado de Justiça e Segurança Pública</p>
                           <p className="text-[19px] font-black uppercase mt-1 text-black">Corpo de Bombeiros Militar</p>
-                          <p className="text-[11px] font-bold text-black">3º SGBM / 2º GBM - Maracaju - MS</p>
+                          <p className="text-[11px] font-bold text-black">{formData.unit}</p>
                         </div>
                         <div className="w-20"></div>
                       </div>
@@ -1179,8 +1223,8 @@ export default function App() {
                               {formData.signatures?.responsible && <img src={formData.signatures.responsible} className="max-h-full grayscale" alt="Assinatura Responsável" />}
                             </div>
                             <div>
-                              <p className="text-[12px] font-black uppercase text-black" style={{ color: '#000000' }}>{formData.responsible?.name}</p>
-                              <p className="text-[10px] font-bold uppercase text-black" style={{ color: '#000000' }}>CPF: {formData.responsible?.cpf}</p>
+                              <p className="text-[12px] font-black uppercase text-black" style={{ color: '#000000' }}>{formData.company?.accompaniedBy || formData.responsible?.name}</p>
+                              <p className="text-[10px] font-bold uppercase text-black" style={{ color: '#000000' }}>CPF: {formData.company?.accompaniedByCPF || formData.responsible?.cpf}</p>
                               <p className="text-[10px] font-bold uppercase tracking-widest text-black" style={{ color: '#000000' }}>Responsável pelo Local</p>
                             </div>
                           </div>

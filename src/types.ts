@@ -11,6 +11,9 @@ export interface CompanyData {
   phone: string;
   occupation: string[];
   pscip: string;
+  accompaniedBy: string;
+  accompaniedByCPF: string;
+  accompaniedByFunction: string;
 }
 
 export interface ResponsibleData {
@@ -40,6 +43,7 @@ export interface SignaturesData {
 export interface InspectionData {
   date: string;
   type: InspectionType;
+  unit: string;
   preNumber: string;
   notificationNumber: string;
   deadlineDays: number;
@@ -50,6 +54,20 @@ export interface InspectionData {
   inspectors: InspectorData[];
   signatures: SignaturesData;
 }
+
+export const GBM_OPTIONS = [
+  "1º GBM (Metropolitano Sul) - Campo Grande",
+  "2º GBM (Grande Dourados)",
+  "3º GBM (Pantanal)",
+  "4º GBM (Sul-Fronteira)",
+  "5º GBM (Bolsão)",
+  "6º GBM (Metropolitano Norte)",
+  "7º GBM (Sudoeste)",
+  "8º GBM (Leste)",
+  "9º GBM (Norte)",
+  "10º GBM (Cone Sul)",
+  "DAT - (Diretoria de Atividades Técnicas)"
+];
 
 export const IRREGULARITIES_LIST = [
   "Apresentar ART/RRT das instalações elétricas de baixa tensão com atestado de conformidade",
