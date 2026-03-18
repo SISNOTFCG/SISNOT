@@ -24,6 +24,26 @@ async function startServer() {
     fs.mkdirSync(pdfsDir, { recursive: true });
   }
 
+  // API endpoint to proxy images for CORS
+  app.get('/api/proxy-image', async (req, res) => {
+    const imageUrl = req.query.url as string;
+    if (!imageUrl) return res.status(400).send('URL is required');
+    
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const arrayBuffer = await blob.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      
+      res.set('Content-Type', blob.type);
+      res.set('Access-Control-Allow-Origin', '*');
+      res.send(buffer);
+    } catch (error) {
+      console.error('Error proxying image:', error);
+      res.status(500).send('Error proxying image');
+    }
+  });
+
   // API endpoint to send PDF
   app.post('/api/send-pdf', async (req, res) => {
     const { pdfBase64, email, phone, preNumber } = req.body;
@@ -53,10 +73,10 @@ async function startServer() {
       });
 
       const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: process.env.EMAIL_USER || 'maracaju.sat@ms.gov.br',
         to: email,
-        subject: 'Notificação de Vistoria Técnica - Corpo de Bombeiros',
-        text: `Olá, segue em anexo a notificação de vistoria técnica.\n\nVocê também pode baixar pelo link: ${pdfUrl}`,
+        subject: 'Resumo do Pedido - NOTIFICAÇÃO EMITIDA',
+        text: 'Olá, segue em anexo o PDF da Notificação emitida.',
         attachments: [
           {
             filename: fileName,

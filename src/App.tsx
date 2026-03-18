@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { 
   ClipboardCheck, 
   Building2, 
@@ -26,6 +26,8 @@ export default function App() {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [customIrregularity, setCustomIrregularity] = useState('');
   
   const [isOccupationDropdownOpen, setIsOccupationDropdownOpen] = useState(false);
@@ -132,8 +134,72 @@ export default function App() {
     }
   };
 
-  const handleNext = () => setStep(prev => prev + 1);
-  const handleBack = () => setStep(prev => prev - 1);
+  const handleNext = () => {
+    setError(null);
+    
+    if (step === 1) {
+      if (!formData.preNumber) {
+        setError('Por favor, informe o número do PRE.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      if (!formData.notificationNumber) {
+        setError('Por favor, informe o número da notificação.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      if (!formData.company?.name) {
+        setError('Por favor, informe a Razão Social da empresa.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+    }
+
+    if (step === 2) {
+      if (!formData.irregularities || formData.irregularities.length === 0) {
+        setError('Por favor, selecione ao menos uma irregularidade.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+    }
+
+    if (step === 3) {
+      const email = formData.responsible?.email || '';
+      if (!formData.responsible?.name) {
+        setError('Por favor, informe o nome do responsável.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      if (email === '@' || !email.includes('.') || email.length < 5) {
+        setError('Por favor, informe um e-mail válido para o responsável.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      if (!formData.responsible?.cpf) {
+        setError('Por favor, informe o CPF do responsável.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      
+      // Validate inspectors
+      for (let i = 0; i < (formData.inspectors?.length || 0); i++) {
+        const inspector = formData.inspectors![i];
+        if (!inspector.name || !inspector.rank || !inspector.registration) {
+          setError(`Por favor, preencha todos os dados do Vistoriante ${i + 1}.`);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
+      }
+    }
+
+    setStep(prev => prev + 1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const handleBack = () => {
+    setError(null);
+    setStep(prev => prev - 1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const saveResponsibleSignature = () => {
     if (responsibleSigRef.current && !responsibleSigRef.current.isEmpty()) {
@@ -145,6 +211,9 @@ export default function App() {
         }
       }));
       handleNext();
+    } else {
+      setError('Por favor, assine no campo indicado.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -153,6 +222,12 @@ export default function App() {
       const ref = inspectorSigRefs.current[index];
       return ref && !ref.isEmpty() ? ref.toDataURL() : '';
     });
+
+    if (inspectorSigs.some(sig => !sig)) {
+      setError('Por favor, todos os vistoriantes devem assinar.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
 
     setFormData(prev => ({
       ...prev,
@@ -167,10 +242,12 @@ export default function App() {
   const generatePDF = async () => {
     if (!pdfHeaderRef.current || !pdfBodyRef.current) {
       console.error('PDF refs not found');
+      setError('Erro interno: Referências do PDF não encontradas.');
       return;
     }
     
     setIsSubmitting(true);
+    setError(null);
     try {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = 210;
@@ -179,10 +256,13 @@ export default function App() {
       const sidePadding = 12;
       
       // 1. Capture Header
+      console.log('Capturing header...');
       const headerCanvas = await html2canvas(pdfHeaderRef.current, {
         scale: 2,
         useCORS: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        logging: true,
+        allowTaint: true
       });
       const headerImgData = headerCanvas.toDataURL('image/png');
       const headerWidth = pageWidth;
@@ -197,13 +277,19 @@ export default function App() {
 
       // Helper to add a section to the PDF
       const addSection = async (elementId: string) => {
+        console.log(`Adding section: ${elementId}`);
         const element = document.getElementById(elementId);
-        if (!element) return;
+        if (!element) {
+          console.warn(`Element ${elementId} not found`);
+          return;
+        }
         
         const canvas = await html2canvas(element, { 
           scale: 2, 
           useCORS: true,
-          backgroundColor: '#ffffff'
+          backgroundColor: '#ffffff',
+          logging: true,
+          allowTaint: true
         });
         const imgWidth = pageWidth - (sidePadding * 2);
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
@@ -225,9 +311,14 @@ export default function App() {
         if (!container) return;
 
         // Add the title of the section first
-        const titleElement = container.querySelector('.bg-stone-800');
+        const titleElement = container.querySelector('.bg-stone-800') || container.querySelector('.bg-black');
         if (titleElement) {
-          const canvas = await html2canvas(titleElement as HTMLElement, { scale: 2, backgroundColor: '#ffffff' });
+          const canvas = await html2canvas(titleElement as HTMLElement, { 
+            scale: 2, 
+            backgroundColor: '#ffffff',
+            useCORS: true,
+            allowTaint: true
+          });
           const imgWidth = pageWidth - (sidePadding * 2);
           const imgHeight = (canvas.height * imgWidth) / canvas.width;
           
@@ -243,7 +334,12 @@ export default function App() {
 
         const items = container.querySelectorAll('.pdf-irregularity-item');
         for (const item of Array.from(items)) {
-          const canvas = await html2canvas(item as HTMLElement, { scale: 2, backgroundColor: '#ffffff' });
+          const canvas = await html2canvas(item as HTMLElement, { 
+            scale: 2, 
+            backgroundColor: '#ffffff',
+            useCORS: true,
+            allowTaint: true
+          });
           const imgWidth = pageWidth - (sidePadding * 2);
           const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
@@ -303,12 +399,22 @@ export default function App() {
       const pdfBase64 = pdf.output('datauristring').split(',')[1];
       
       // Save locally for the user
-      const fileName = `NOT ${formData.notificationNumber} - ${formData.company?.name || 'documento'}.pdf`.replace(/\//g, '_');
-      pdf.save(fileName);
+      // Sanitize filename: remove characters that might cause issues
+      const safeNotificationNumber = (formData.notificationNumber || 'S-N').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const safeCompanyName = (formData.company?.name || 'documento').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const fileName = `NOT_${safeNotificationNumber}_${safeCompanyName}.pdf`;
+      
+      try {
+        pdf.save(fileName);
+      } catch (saveError) {
+        console.error('Error saving PDF locally:', saveError);
+        // Fallback: try to open in new tab if save fails
+        window.open(pdf.output('bloburl'), '_blank');
+      }
       
       // Send to server for Email and SMS delivery
       try {
-        await fetch('/api/send-pdf', {
+        const response = await fetch('/api/send-pdf', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -318,14 +424,30 @@ export default function App() {
             preNumber: formData.preNumber
           })
         });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.pdfUrl) {
+            setPdfUrl(data.pdfUrl);
+          }
+          setStep(7); // Success step
+        } else {
+          const errorData = await response.json();
+          console.warn('Server failed to send PDF:', errorData);
+          setError(`O PDF foi baixado, mas não pôde ser enviado automaticamente por e-mail/SMS: ${errorData.error || 'Erro no servidor'}.`);
+          setStep(7); // Still show success step as the PDF was downloaded
+        }
       } catch (apiError) {
         console.error('Error sending PDF to server:', apiError);
+        setError(`O PDF foi baixado, mas houve um erro ao tentar enviá-lo automaticamente: ${apiError instanceof Error ? apiError.message : 'Erro de conexão'}.`);
+        setStep(7); // Still show success step as the PDF was downloaded
       }
       
       await new Promise(resolve => setTimeout(resolve, 1500));
       setIsSuccess(true);
     } catch (error) {
       console.error('Error generating PDF:', error);
+      setError('Ocorreu um erro ao gerar o PDF. Por favor, tente novamente ou verifique se todos os campos estão preenchidos corretamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -403,12 +525,24 @@ export default function App() {
               <p className="text-stone-600 mb-8 max-w-md mx-auto">
                 O documento foi gerado com sucesso e enviado para os e-mails do responsável e do vistoriante.
               </p>
-              <button 
-                onClick={resetForm}
-                className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-red-200"
-              >
-                Nova Vistoria
-              </button>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                {pdfUrl && (
+                  <a 
+                    href={pdfUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="bg-stone-900 hover:bg-stone-800 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg flex items-center gap-2"
+                  >
+                    <FileText size={20} /> Baixar PDF Manualmente
+                  </a>
+                )}
+                <button 
+                  onClick={resetForm}
+                  className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-red-200"
+                >
+                  Nova Vistoria
+                </button>
+              </div>
             </motion.div>
           ) : (
             <motion.div
@@ -418,6 +552,13 @@ export default function App() {
               exit={{ opacity: 0, x: -20 }}
               className="bg-white p-8 rounded-3xl shadow-xl border border-stone-100"
             >
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex items-center gap-3 mb-6">
+                  <AlertTriangle size={20} className="shrink-0" />
+                  <p className="text-sm font-medium">{error}</p>
+                </div>
+              )}
+
               {step === 1 && (
                 <div className="space-y-6">
                   <div className="flex items-center gap-3 mb-2">
@@ -426,7 +567,7 @@ export default function App() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2 md:col-span-2">
-                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">PRE</label>
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">PRE <span className="text-red-500">*</span></label>
                       <div className="flex items-center">
                         <input 
                           type="text"
@@ -439,7 +580,7 @@ export default function App() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Nº NOTIFICAÇÃO</label>
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Nº NOTIFICAÇÃO <span className="text-red-500">*</span></label>
                       <input 
                         type="text"
                         value={formData.notificationNumber}
@@ -471,7 +612,7 @@ export default function App() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Nome / Razão Social</label>
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Nome / Razão Social <span className="text-red-500">*</span></label>
                       <input 
                         type="text"
                         value={formData.company?.name}
@@ -673,48 +814,48 @@ export default function App() {
                   </div>
                   <div className="space-y-4">
                     <h3 className="text-sm font-bold text-stone-400 uppercase tracking-widest border-b pb-1">Dados do Responsável</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2 md:col-span-2">
-                        <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Nome Completo</label>
-                        <input 
-                          type="text"
-                          value={formData.responsible?.name}
-                          onChange={(e) => updateNestedField('responsible', 'name', e.target.value)}
-                          className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
-                          placeholder="Nome do responsável"
-                        />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2 md:col-span-2">
+                          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Nome Completo <span className="text-red-500">*</span></label>
+                          <input 
+                            type="text"
+                            value={formData.responsible?.name}
+                            onChange={(e) => updateNestedField('responsible', 'name', e.target.value)}
+                            className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                            placeholder="Nome do responsável"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">E-mail <span className="text-red-500">*</span></label>
+                          <input 
+                            type="email"
+                            value={formData.responsible?.email}
+                            onChange={(e) => {
+                              let val = e.target.value;
+                              if (!val.includes('@')) {
+                                val = '@';
+                              }
+                              const parts = val.split('@');
+                              if (parts.length > 2) {
+                                val = parts[0] + '@' + parts.slice(1).join('');
+                              }
+                              updateNestedField('responsible', 'email', val);
+                            }}
+                            className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                            placeholder="email@exemplo.com"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">CPF <span className="text-red-500">*</span></label>
+                          <input 
+                            type="text"
+                            value={formData.responsible?.cpf}
+                            onChange={(e) => updateNestedField('responsible', 'cpf', maskCPF(e.target.value))}
+                            className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                            placeholder="000.000.000-00"
+                          />
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">E-mail</label>
-                        <input 
-                          type="email"
-                          value={formData.responsible?.email}
-                          onChange={(e) => {
-                            let val = e.target.value;
-                            if (!val.includes('@')) {
-                              val = '@';
-                            }
-                            const parts = val.split('@');
-                            if (parts.length > 2) {
-                              val = parts[0] + '@' + parts.slice(1).join('');
-                            }
-                            updateNestedField('responsible', 'email', val);
-                          }}
-                          className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
-                          placeholder="email@exemplo.com"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">CPF</label>
-                        <input 
-                          type="text"
-                          value={formData.responsible?.cpf}
-                          onChange={(e) => updateNestedField('responsible', 'cpf', maskCPF(e.target.value))}
-                          className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
-                          placeholder="000.000.000-00"
-                        />
-                      </div>
-                    </div>
                   </div>
                   <div className="space-y-4 pt-4">
                     <div className="flex justify-between items-center border-b pb-1">
@@ -742,7 +883,7 @@ export default function App() {
                           )}
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Nome</label>
+                          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Nome <span className="text-red-500">*</span></label>
                           <input 
                             type="text"
                             value={inspector.name}
@@ -756,7 +897,7 @@ export default function App() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Matrícula</label>
+                          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Matrícula <span className="text-red-500">*</span></label>
                           <input 
                             type="text"
                             value={inspector.registration}
@@ -770,7 +911,7 @@ export default function App() {
                           />
                         </div>
                         <div className="space-y-2 md:col-span-2">
-                          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Graduação</label>
+                          <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Graduação <span className="text-red-500">*</span></label>
                           <select 
                             value={inspector.rank}
                             onChange={(e) => {
@@ -872,21 +1013,21 @@ export default function App() {
                     <h2 className="text-xl font-bold">Revisão e Geração de Documento</h2>
                   </div>
                   <div className="bg-stone-50 p-6 rounded-2xl border border-stone-200 space-y-4">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                       <div>
-                        <p className="text-[10px] font-bold text-stone-400 uppercase">Empresa</p>
+                        <p className="text-[10px] font-bold text-stone-400 uppercase">Empresa <span className="text-red-500">*</span></p>
                         <p className="font-bold">{formData.company?.name}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold text-stone-400 uppercase">Tipo</p>
+                        <p className="text-[10px] font-bold text-stone-400 uppercase">Tipo <span className="text-red-500">*</span></p>
                         <p className="font-bold text-red-600">{formData.type}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold text-stone-400 uppercase">Responsável</p>
+                        <p className="text-[10px] font-bold text-stone-400 uppercase">Responsável <span className="text-red-500">*</span></p>
                         <p className="font-bold">{formData.responsible?.name}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold text-stone-400 uppercase">E-mail</p>
+                        <p className="text-[10px] font-bold text-stone-400 uppercase">E-mail <span className="text-red-500">*</span></p>
                         <p className="font-bold">{formData.responsible?.email}</p>
                       </div>
                       <div className="col-span-2">
@@ -919,12 +1060,13 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="fixed left-[-9999px] top-0">
+                  <div className="absolute opacity-100 pointer-events-none -z-50" style={{ left: '-10000px' }}>
                     <div ref={pdfHeaderRef} className="w-[210mm] p-12 pb-0 font-sans text-black bg-white">
                       <div className="flex justify-between items-center pb-6 mb-8 border-b-4 border-black">
                         <img 
-                          src="https://www.bombeiros.ms.gov.br/wp-content/uploads/2015/01/Bras%C3%A3o_estilizado_tipo_texto._jpg.jpg" 
-                          className="w-32 h-20 object-contain" 
+                          src={`/api/proxy-image?url=${encodeURIComponent('https://upload.wikimedia.org/wikipedia/pt/b/b3/Bras%C3%A3o_CBMMS.png')}`}
+                          style={{ width: '100px', height: '100px' }}
+                          className="object-contain" 
                           alt="Logo CBMMS" 
                           referrerPolicy="no-referrer"
                         />
@@ -956,102 +1098,102 @@ export default function App() {
 
                     <div ref={pdfBodyRef} className="w-[210mm] p-12 pt-0 font-sans text-black bg-white">
                       <div className="space-y-6">
-                        <div id="pdf-section-data" className="rounded-xl border border-black overflow-hidden">
-                          <div className="text-white px-4 py-2 text-[11px] font-black uppercase tracking-widest bg-black">Dados da Edificação / Evento</div>
+                        <div id="pdf-section-data" className="rounded-xl border border-black overflow-hidden" style={{ borderColor: '#000000' }}>
+                          <div className="text-white px-4 py-2 text-[11px] font-black uppercase tracking-widest bg-black" style={{ backgroundColor: '#000000', color: '#ffffff' }}>Dados da Edificação / Evento</div>
                           <div className="p-4 grid grid-cols-2 gap-y-3 gap-x-6 text-[12px]">
-                            <div className="col-span-2 flex border-b border-stone-100 pb-1">
-                              <span className="font-black uppercase w-32 text-black">Razão Social:</span>
-                              <span className="font-bold text-black">{formData.company?.name}</span>
+                            <div className="col-span-2 flex border-b border-stone-100 pb-1" style={{ borderBottomColor: '#f5f5f4' }}>
+                              <span className="font-black uppercase w-32 text-black" style={{ color: '#000000' }}>Razão Social:</span>
+                              <span className="font-bold text-black" style={{ color: '#000000' }}>{formData.company?.name}</span>
                             </div>
-                            <div className="flex border-b border-stone-100 pb-1">
-                              <span className="font-black uppercase w-32 text-black">CNPJ/CPF:</span>
-                              <span className="font-bold text-black">{formData.company?.cnpj}</span>
+                            <div className="flex border-b border-stone-100 pb-1" style={{ borderBottomColor: '#f5f5f4' }}>
+                              <span className="font-black uppercase w-32 text-black" style={{ color: '#000000' }}>CNPJ/CPF:</span>
+                              <span className="font-bold text-black" style={{ color: '#000000' }}>{formData.company?.cnpj}</span>
                             </div>
-                            <div className="flex border-b border-stone-100 pb-1">
-                              <span className="font-black uppercase w-32 text-black">Nº PSCIP:</span>
-                              <span className="font-bold text-black">{formData.company?.pscip}</span>
+                            <div className="flex border-b border-stone-100 pb-1" style={{ borderBottomColor: '#f5f5f4' }}>
+                              <span className="font-black uppercase w-32 text-black" style={{ color: '#000000' }}>Nº PSCIP:</span>
+                              <span className="font-bold text-black" style={{ color: '#000000' }}>{formData.company?.pscip}</span>
                             </div>
-                            <div className="flex border-b border-stone-100 pb-1">
-                              <span className="font-black uppercase w-32 text-black">Responsável:</span>
-                              <span className="font-bold text-black">{formData.responsible?.name}</span>
+                            <div className="flex border-b border-stone-100 pb-1" style={{ borderBottomColor: '#f5f5f4' }}>
+                              <span className="font-black uppercase w-32 text-black" style={{ color: '#000000' }}>Responsável:</span>
+                              <span className="font-bold text-black" style={{ color: '#000000' }}>{formData.responsible?.name}</span>
                             </div>
-                            <div className="flex border-b border-stone-100 pb-1">
-                              <span className="font-black uppercase w-32 text-black">Ocupação:</span>
-                              <span className="font-bold text-black">{formData.company?.occupation?.join(', ')}</span>
+                            <div className="flex border-b border-stone-100 pb-1" style={{ borderBottomColor: '#f5f5f4' }}>
+                              <span className="font-black uppercase w-32 text-black" style={{ color: '#000000' }}>Ocupação:</span>
+                              <span className="font-bold text-black" style={{ color: '#000000' }}>{formData.company?.occupation?.join(', ')}</span>
                             </div>
-                            <div className="col-span-2 flex border-b border-stone-100 pb-1">
-                              <span className="font-black uppercase w-32 text-black">Endereço:</span>
-                              <span className="font-bold text-black">{formData.company?.street}, {formData.company?.number} - {formData.company?.neighborhood}</span>
+                            <div className="col-span-2 flex border-b border-stone-100 pb-1" style={{ borderBottomColor: '#f5f5f4' }}>
+                              <span className="font-black uppercase w-32 text-black" style={{ color: '#000000' }}>Endereço:</span>
+                              <span className="font-bold text-black" style={{ color: '#000000' }}>{formData.company?.street}, {formData.company?.number} - {formData.company?.neighborhood}</span>
                             </div>
-                            <div className="flex border-b border-stone-100 pb-1">
-                              <span className="font-black uppercase w-32 text-black">Telefone:</span>
-                              <span className="font-bold text-black">{formData.company?.phone}</span>
+                            <div className="flex border-b border-stone-100 pb-1" style={{ borderBottomColor: '#f5f5f4' }}>
+                              <span className="font-black uppercase w-32 text-black" style={{ color: '#000000' }}>Telefone:</span>
+                              <span className="font-bold text-black" style={{ color: '#000000' }}>{formData.company?.phone}</span>
                             </div>
                           </div>
                         </div>
 
-                        <div id="pdf-section-deadline" className="rounded-xl border-2 border-black p-5 bg-white">
-                          <h2 className="text-[13px] font-black uppercase mb-3 flex items-center gap-2 text-black">
+                        <div id="pdf-section-deadline" className="rounded-xl border-2 border-black p-5 bg-white" style={{ borderColor: '#000000', backgroundColor: '#ffffff' }}>
+                          <h2 className="text-[13px] font-black uppercase mb-3 flex items-center gap-2 text-black" style={{ color: '#000000' }}>
                             <AlertTriangle size={14} /> PRAZO PARA CUMPRIMENTO
                           </h2>
-                          <div className="space-y-3 text-[12px] leading-relaxed text-black">
-                            <p>Em conformidade com a <strong>Lei Estadual nº 4.335/2013</strong>, Vossa Senhoria deverá cumprir as exigências listadas abaixo no prazo de <span className="text-black font-black underline decoration-2 underline-offset-4">{formData.deadlineDays} DIAS</span>, a contar da data de recebimento deste documento.</p>
-                            <p className="text-black font-bold">O prazo para cumprimento desta notificação se encerra em: {formData.date && formData.deadlineDays ? format(addDays(new Date(formData.date), formData.deadlineDays), "dd/MM/yyyy") : format(addDays(new Date(), 30), "dd/MM/yyyy")}</p>
-                            <p className="font-bold text-black">O não cumprimento desta notificação sujeita o infrator à multa, interdição ou outras penalidades previstas em Lei.</p>
-                            <p className="border-l-4 border-black pl-3 italic text-black">Vossa Senhoria fica cientificada de que, conforme o Art. 9º da Lei nº 4.335/2013, o local não pode funcionar sem o devido Alvará do Corpo de Bombeiros Militar do Mato Grosso do Sul.</p>
+                          <div className="space-y-3 text-[12px] leading-relaxed text-black" style={{ color: '#000000' }}>
+                            <p>Em conformidade com a <strong>Lei Estadual nº 4.335/2013</strong>, Vossa Senhoria deverá cumprir as exigências listadas abaixo no prazo de <span className="text-black font-black underline decoration-2 underline-offset-4" style={{ color: '#000000' }}>{formData.deadlineDays} DIAS</span>, a contar da data de recebimento deste documento.</p>
+                            <p className="text-black font-bold" style={{ color: '#000000' }}>O prazo para cumprimento desta notificação se encerra em: {formData.date && formData.deadlineDays ? format(addDays(new Date(formData.date), formData.deadlineDays), "dd/MM/yyyy") : format(addDays(new Date(), 30), "dd/MM/yyyy")}</p>
+                            <p className="font-bold text-black" style={{ color: '#000000' }}>O não cumprimento desta notificação sujeita o infrator à multa, interdição ou outras penalidades previstas em Lei.</p>
+                            <p className="border-l-4 border-black pl-3 italic text-black" style={{ borderLeftColor: '#000000', color: '#000000' }}>Vossa Senhoria fica cientificada de que, conforme o Art. 9º da Lei nº 4.335/2013, o local não pode funcionar sem o devido Alvará do Corpo de Bombeiros Militar do Mato Grosso do Sul.</p>
                           </div>
                         </div>
 
-                        <div id="pdf-section-irregularities" className="rounded-xl border border-black overflow-hidden">
-                          <div className="text-white px-4 py-2 text-[11px] font-black uppercase tracking-widest bg-black">Exigências Técnicas a Cumprir</div>
+                        <div id="pdf-section-irregularities" className="rounded-xl border border-black overflow-hidden" style={{ borderColor: '#000000' }}>
+                          <div className="text-white px-4 py-2 text-[11px] font-black uppercase tracking-widest bg-black" style={{ backgroundColor: '#000000', color: '#ffffff' }}>Exigências Técnicas a Cumprir</div>
                           <div className="p-6 space-y-1">
                             {formData.irregularities?.map((i, idx) => (
-                              <div key={idx} className="pdf-irregularity-item flex gap-4 items-start border-b border-stone-50 pb-1 last:border-0" style={{ lineHeight: '1.15' }}>
-                                <span className="flex items-center justify-center w-5 h-5 rounded-full font-black text-[10px] shrink-0 bg-stone-100 text-stone-900">{idx + 1}</span>
-                                <span className="text-[12px] font-medium pt-0.5 text-stone-800">{i}</span>
+                              <div key={idx} className="pdf-irregularity-item flex gap-4 items-start border-b border-stone-50 pb-1 last:border-0" style={{ lineHeight: '1.15', borderBottomColor: '#fafaf9' }}>
+                                <span className="flex items-center justify-center w-5 h-5 rounded-full font-black text-[10px] shrink-0 bg-stone-100 text-stone-900" style={{ backgroundColor: '#f5f5f4', color: '#1c1917' }}>{idx + 1}</span>
+                                <span className="text-[12px] font-medium pt-0.5 text-stone-800" style={{ color: '#292524' }}>{i}</span>
                               </div>
                             ))}
                           </div>
                         </div>
 
-                        <div id="pdf-section-return" className="rounded-xl border border-black p-5 bg-white flex items-center gap-6">
+                        <div id="pdf-section-return" className="rounded-xl border border-black p-5 bg-white flex items-center gap-6" style={{ borderColor: '#000000', backgroundColor: '#ffffff' }}>
                           <div className="flex-1 space-y-2">
-                            <p className="text-[12px] leading-relaxed text-black font-medium">
-                              Ao cumprir todas as exigências desta notificação, acesse o site <span className="text-blue-600 font-bold underline">https://prevenir.bombeiros.ms.gov.br</span> aba <span className="font-bold">"ATENDIMENTO TÉCNICO"</span> e solicite o retorno de vistoria para esta edificação.
+                            <p className="text-[12px] leading-relaxed text-black font-medium" style={{ color: '#000000' }}>
+                              Ao cumprir todas as exigências desta notificação, acesse o site <span className="text-blue-600 font-bold underline" style={{ color: '#2563eb' }}>https://prevenir.bombeiros.ms.gov.br</span> aba <span className="font-bold">"ATENDIMENTO TÉCNICO"</span> e solicite o retorno de vistoria para esta edificação.
                             </p>
                           </div>
-                          <div className="shrink-0 bg-white p-2 rounded-lg border border-black shadow-sm">
-                            <QRCodeSVG 
+                          <div className="shrink-0 bg-white p-2 rounded-lg border border-black shadow-sm" style={{ backgroundColor: '#ffffff', borderColor: '#000000' }}>
+                            <QRCodeCanvas 
                               value="https://prevenir.bombeiros.ms.gov.br/"
                               size={80}
                               level="H"
                               includeMargin={false}
                             />
-                            <p className="text-[9px] text-center mt-1 font-bold text-black uppercase tracking-tighter">Acesse o Prevenir</p>
+                            <p className="text-[9px] text-center mt-1 font-bold text-black uppercase tracking-tighter" style={{ color: '#000000' }}>Acesse o Prevenir</p>
                           </div>
                         </div>
 
                         <div id="pdf-section-signatures" className="mt-12 grid grid-cols-2 gap-12">
                           <div className="text-center space-y-3">
-                            <div className="h-24 flex items-end justify-center border-b-2 border-black pb-2">
+                            <div className="h-24 flex items-end justify-center border-b-2 border-black pb-2" style={{ borderBottomColor: '#000000' }}>
                               {formData.signatures?.responsible && <img src={formData.signatures.responsible} className="max-h-full grayscale" alt="Assinatura Responsável" />}
                             </div>
                             <div>
-                              <p className="text-[12px] font-black uppercase text-black">{formData.responsible?.name}</p>
-                              <p className="text-[10px] font-bold uppercase text-black">CPF: {formData.responsible?.cpf}</p>
-                              <p className="text-[10px] font-bold uppercase tracking-widest text-black">Responsável pelo Local</p>
+                              <p className="text-[12px] font-black uppercase text-black" style={{ color: '#000000' }}>{formData.responsible?.name}</p>
+                              <p className="text-[10px] font-bold uppercase text-black" style={{ color: '#000000' }}>CPF: {formData.responsible?.cpf}</p>
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-black" style={{ color: '#000000' }}>Responsável pelo Local</p>
                             </div>
                           </div>
                           <div className="space-y-8">
                             {formData.inspectors?.map((inspector, index) => (
                               <div key={index} className="text-center space-y-3">
-                                <div className="h-24 flex items-end justify-center border-b-2 border-black pb-2">
+                                <div className="h-24 flex items-end justify-center border-b-2 border-black pb-2" style={{ borderBottomColor: '#000000' }}>
                                   {formData.signatures?.inspectors?.[index] && <img src={formData.signatures.inspectors[index]} className="max-h-full grayscale" alt={`Assinatura Vistoriante ${index + 1}`} />}
                                 </div>
                                 <div>
-                                  <p className="text-[12px] font-black uppercase text-black">{inspector.rank} {inspector.name}</p>
-                                  <p className="text-[10px] font-bold uppercase text-black">Matrícula: {inspector.registration}</p>
-                                  <p className="text-[10px] font-bold uppercase tracking-widest text-black">Vistoriante do CBMMS</p>
+                                  <p className="text-[12px] font-black uppercase text-black" style={{ color: '#000000' }}>{inspector.rank} {inspector.name}</p>
+                                  <p className="text-[10px] font-bold uppercase text-black" style={{ color: '#000000' }}>Matrícula: {inspector.registration}</p>
+                                  <p className="text-[10px] font-bold uppercase tracking-widest text-black" style={{ color: '#000000' }}>Vistoriante do CBMMS</p>
                                 </div>
                               </div>
                             ))}

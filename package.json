@@ -25,7 +25,7 @@
     "esbuild": "^0.27.4",
     "express": "^4.21.2",
     "html2canvas": "^1.4.1",
-    "jspdf": "^4.2.0",
+    "jspdf": "^2.5.1",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "nodemailer": "^8.0.2",
