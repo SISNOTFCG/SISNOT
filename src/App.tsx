@@ -365,8 +365,9 @@ export default function App() {
       await addIrregularities();
       await addSection('pdf-section-return');
       await addSection('pdf-section-signatures');
+      await addSection('pdf-section-footer');
 
-      // Finalize PDF: Add page numbers and footer
+      // Finalize PDF: Add page numbers
       const totalPages = currentPage;
       for (let i = 1; i <= totalPages; i++) {
         pdf.setPage(i);
@@ -376,25 +377,6 @@ export default function App() {
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(0, 0, 0);
         pdf.text(`${i}/${totalPages}`, 185, 48);
-        
-        // Add Footer only on last page
-        if (i === totalPages) {
-          pdf.setFontSize(9);
-          pdf.setTextColor(100, 100, 100);
-          const footerLines = [
-            "CORPO DE BOMBEIROS MILITAR DE MARACAJU-MS",
-            "Rua Apa, 21 - Bairro Centro - CEP 79150-047",
-            "Email: maracaju.sat@cbm.ms.gov.br",
-            "Telefone (whatsapp): (67) 3454-4141"
-          ];
-          
-          let y = pageHeight - 15;
-          footerLines.forEach(line => {
-            const textWidth = pdf.getTextWidth(line);
-            pdf.text(line, (pageWidth - textWidth) / 2, y);
-            y += 4;
-          });
-        }
       }
       
       const pdfBase64 = pdf.output('datauristring').split(',')[1];
@@ -1245,7 +1227,7 @@ export default function App() {
                         </div>
 
                         {/* PDF Footer */}
-                        <div className="mt-16 pt-4 border-t border-stone-200 text-center">
+                        <div id="pdf-section-footer" className="mt-16 pt-4 border-t border-stone-200 text-center">
                           <p className="text-[10px] text-stone-500 font-medium leading-tight">
                             {formData.unit && GBM_FOOTERS[formData.unit]}
                           </p>
