@@ -364,8 +364,20 @@ export default function App() {
       await addSection('pdf-section-deadline');
       await addIrregularities();
       await addSection('pdf-section-return');
-      await addSection('pdf-section-signatures');
+
+      // Force a new page for the final section to ensure nothing is cut
+      // and to place the footer at the top of the last page as requested.
+      pdf.addPage();
+      currentPage++;
+      currentY = headerHeight;
+      addHeaderAndPageNumber(currentPage);
+
+      // Add footer at the top of the last page
       await addSection('pdf-section-footer');
+      currentY += 5; // Small gap
+
+      // Add signatures below the footer on the last page
+      await addSection('pdf-section-signatures');
 
       // Finalize PDF: Add page numbers
       const totalPages = currentPage;
@@ -1205,8 +1217,8 @@ export default function App() {
                               {formData.signatures?.responsible && <img src={formData.signatures.responsible} className="max-h-full grayscale" alt="Assinatura Responsável" />}
                             </div>
                             <div>
-                              <p className="text-[12px] font-black uppercase text-black" style={{ color: '#000000' }}>{formData.company?.accompaniedBy || formData.responsible?.name}</p>
-                              <p className="text-[10px] font-bold uppercase text-black" style={{ color: '#000000' }}>CPF: {formData.company?.accompaniedByCPF || formData.responsible?.cpf}</p>
+                              <p className="text-[12px] font-black uppercase text-black" style={{ color: '#000000' }}>{formData.company?.accompaniedBy}</p>
+                              <p className="text-[10px] font-bold uppercase text-black" style={{ color: '#000000' }}>CPF: {formData.company?.accompaniedByCPF}</p>
                               <p className="text-[10px] font-bold uppercase tracking-widest text-black" style={{ color: '#000000' }}>Responsável pelo Local</p>
                             </div>
                           </div>
