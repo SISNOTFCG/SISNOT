@@ -39,7 +39,7 @@ export default function App() {
     preNumber: '',
     notificationNumber: '',
     deadlineDays: 30,
-    company: { name: '', cnpj: '', street: '', number: '', neighborhood: '', address: '', phone: '', occupation: [], pscip: '', accompaniedBy: '', accompaniedByCPF: '', accompaniedByFunction: '' },
+    company: { name: '', cnpj: '', street: '', number: '', neighborhood: '', city: '', address: '', phone: '', occupation: [], pscip: '', accompaniedBy: '', accompaniedByCPF: '', accompaniedByFunction: '' },
     irregularities: [],
     responsible: { name: '', email: '@', cpf: '' },
     inspectors: [{ name: '', rank: '', registration: '' }],
@@ -282,28 +282,31 @@ export default function App() {
         const element = document.getElementById(elementId);
         if (!element) {
           console.warn(`Element ${elementId} not found`);
-          return;
+          return null;
         }
         
         const canvas = await html2canvas(element, { 
           scale: 2, 
           useCORS: true,
           backgroundColor: '#ffffff',
-          logging: true,
+          logging: false,
           allowTaint: true
         });
         const imgWidth = pageWidth - (sidePadding * 2);
         const imgHeight = (canvas.height * imgWidth) / canvas.width;
         
-        if (currentY + imgHeight > pageHeight - bottomMargin) {
+        // Use a 5mm buffer to be safe with margins
+        if (currentY + imgHeight > pageHeight - bottomMargin - 5) {
           pdf.addPage();
           currentPage++;
           currentY = headerHeight;
           addHeaderAndPageNumber(currentPage);
         }
         
+        const startY = currentY;
         pdf.addImage(canvas.toDataURL('image/png'), 'PNG', sidePadding, currentY, imgWidth, imgHeight);
         currentY += imgHeight + 6; // Spacing between sections
+        return { startY, height: imgHeight, page: currentPage };
       };
 
       // Special handling for irregularities to avoid cutting text
@@ -363,7 +366,16 @@ export default function App() {
       await addSection('pdf-section-data');
       await addSection('pdf-section-deadline');
       await addIrregularities();
-      await addSection('pdf-section-return');
+      const returnResult = await addSection('pdf-section-return');
+      
+      // Add clickable link over the return section
+      if (returnResult) {
+        pdf.setPage(returnResult.page);
+        // The URL is roughly in the middle of the block. 
+        // We'll add a link to the whole block area for simplicity and reliability.
+        pdf.link(sidePadding, returnResult.startY, pageWidth - (sidePadding * 2), returnResult.height, { url: 'https://prevenir.bombeiros.ms.gov.br' });
+      }
+
       await addSection('pdf-section-signatures');
 
       // Finalize PDF: Add page numbers and unit footer
@@ -385,7 +397,8 @@ export default function App() {
             pdf.setFont('helvetica', 'normal');
             pdf.setTextColor(100, 100, 100);
             const splitFooter = pdf.splitTextToSize(footerText, pageWidth - 24);
-            const footerY = pageHeight - 10 - (splitFooter.length - 1) * 3;
+            // Move footer slightly up to avoid cutting (18mm from bottom)
+            const footerY = pageHeight - 18 - (splitFooter.length - 1) * 3;
             pdf.text(splitFooter, pageWidth / 2, footerY, { align: 'center' });
           }
         }
@@ -459,7 +472,7 @@ export default function App() {
       preNumber: '',
       notificationNumber: '',
       deadlineDays: 30,
-      company: { name: '', cnpj: '', pscip: '', street: '', number: '', neighborhood: '', address: '', phone: '', occupation: [], accompaniedBy: '', accompaniedByCPF: '', accompaniedByFunction: '' },
+      company: { name: '', cnpj: '', pscip: '', street: '', number: '', neighborhood: '', city: '', address: '', phone: '', occupation: [], accompaniedBy: '', accompaniedByCPF: '', accompaniedByFunction: '' },
       irregularities: [],
       responsible: { name: '', email: '@', cpf: '' },
       inspectors: [{ name: '', rank: '', registration: '' }],
@@ -1211,7 +1224,7 @@ export default function App() {
                           </div>
                         </div>
 
-                        <div id="pdf-section-signatures" className="mt-12 grid grid-cols-2 gap-12">
+                        <div id="pdf-section-signatures" className="mt-12 grid grid-cols-2 gap-12 pb-12">
                           <div className="text-center space-y-3">
                             <div className="h-24 flex items-end justify-center border-b-2 border-black pb-2" style={{ borderBottomColor: '#000000' }}>
                               {formData.signatures?.responsible && <img src={formData.signatures.responsible} className="max-h-full grayscale" alt="Assinatura Responsável" />}
