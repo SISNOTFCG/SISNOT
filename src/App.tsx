@@ -20,7 +20,7 @@ import { format, addDays } from 'date-fns';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { cn } from './utils';
-import { InspectionData, IRREGULARITIES_LIST, INSPECTOR_RANKS, OCCUPATIONS_LIST, GBM_OPTIONS } from './types';
+import { InspectionData, IRREGULARITIES_LIST, INSPECTOR_RANKS, OCCUPATIONS_LIST, GBM_OPTIONS, GBM_FOOTERS } from './types';
 
 export default function App() {
   const [step, setStep] = useState(1);
@@ -1242,6 +1242,13 @@ export default function App() {
                               </div>
                             ))}
                           </div>
+                        </div>
+
+                        {/* PDF Footer */}
+                        <div className="mt-16 pt-4 border-t border-stone-200 text-center">
+                          <p className="text-[10px] text-stone-500 font-medium leading-tight">
+                            {formData.unit && GBM_FOOTERS[formData.unit]}
+                          </p>
                         </div>
                       </div>
                     </div>

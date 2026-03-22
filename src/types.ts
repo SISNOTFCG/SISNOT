@@ -56,18 +56,32 @@ export interface InspectionData {
 }
 
 export const GBM_OPTIONS = [
-  "1º GBM (Metropolitano Sul) - Campo Grande",
-  "2º GBM (Grande Dourados)",
-  "3º GBM (Pantanal)",
-  "4º GBM (Sul-Fronteira)",
-  "5º GBM (Bolsão)",
-  "6º GBM (Metropolitano Norte)",
-  "7º GBM (Sudoeste)",
-  "8º GBM (Leste)",
-  "9º GBM (Norte)",
-  "10º GBM (Cone Sul)",
-  "DAT - (Diretoria de Atividades Técnicas)"
+  "1º GBM (METROPOLITANO SUL)",
+  "2º GBM (GRANDE DOURADOS)",
+  "3º GBM (PANTANAL)",
+  "4º GBM (SUL-FRONTEIRA)",
+  "5º GBM (BOLSÃO)",
+  "6º GBM",
+  "7º GBM",
+  "8º GBM",
+  "9º GBM",
+  "10º GBM",
+  "DAT (DIRETORIA DE ATIVIDADES TÉCNICAS)"
 ];
+
+export const GBM_FOOTERS: Record<string, string> = {
+  "1º GBM (METROPOLITANO SUL)": "Avenida Costa e Silva, 901 – Vila Progresso, Campo Grande – MS. Contato: 3314-5878",
+  "2º GBM (GRANDE DOURADOS)": "Avenida Presidente Vargas, 1167, Vila Progresso, Dourados-MS. Contato: (67) 3421-4442/3422-7400.",
+  "3º GBM (PANTANAL)": "Av. Rio Branco, 1.611 – Bairro Universitário, Corumbá-MS. Contato: (67) 3231-9593 ou 3231-2444",
+  "4º GBM (SUL-FRONTEIRA)": "Av. Brasil, 950 – Bairro da Granja, Ponta Porã - MS. Contato: (67) 3437-0104",
+  "5º GBM (BOLSÃO)": "Av. Filinto Muller, 3.300 – Jd. Morumbi, Três Lagoas-MS. Contato: (67) 3509-7800",
+  "6º GBM": "Avenida do Poeta, 70, Parque dos Poderes, Campo Grande-MS. Contato: (67) 99941-7334",
+  "7º GBM": "Rua João Martins Paniagua, s/n – Jd. Aeroporto, Jardim-MS. Contato: (67) 3251-2326",
+  "8º GBM": "Rua Imaculada Conceição, 1.678 – Bairro Guiomar Soares de Andrade, Nova Andradina-MS. Contato: (067) 3441-6804 / 3441-1922",
+  "9º GBM": "Av. Otacílio Severo dos Santos, 385 – Vl. Santo André, Coxim-MS. Contato: (67) 3908-6000",
+  "10º GBM": "Avenida Amambaí, 850, Centro, Naviraí-MS. Contato: (67) 3461-3514/ 3461-3209.",
+  "DAT (DIRETORIA DE ATIVIDADES TÉCNICAS)": "Rua Fernando Augusto Corrêa da Costa, 376, Jardim América, Campo Grande-MS. Contato (67)3357-9419 / (67) 99987-9882"
+};
 
 export const IRREGULARITIES_LIST = [
   "Apresentar ART/RRT das instalações elétricas de baixa tensão com atestado de conformidade",
