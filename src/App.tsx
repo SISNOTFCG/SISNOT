@@ -387,7 +387,8 @@ export default function App() {
         pdf.setFontSize(10);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(0, 0, 0);
-        pdf.text(`${i}/${totalPages}`, 185, 48);
+        // Positioned below "EXIGÊNCIA DE VISTORIA TÉCNICA" inside the notification box
+        pdf.text(`PÁGINA: ${i}/${totalPages}`, 16, 56);
 
         // Add Unit Footer only on last page at the very bottom
         if (i === totalPages && formData.unit) {
@@ -1016,11 +1017,11 @@ export default function App() {
                 <div className="space-y-6">
                   <div className="flex items-center gap-3 mb-2">
                     <PenTool className="text-red-600" />
-                    <h2 className="text-xl font-bold">Assinatura do Responsável</h2>
+                    <h2 className="text-xl font-bold">Assinatura de quem acompanhou a vistoria</h2>
                   </div>
                   <div className="space-y-3">
                     <div className="flex justify-between items-end">
-                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Assinatura do Responsável ({formData.responsible?.name} - CPF: {formData.responsible?.cpf})</label>
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Assinatura ({formData.company?.accompaniedBy} - CPF: {formData.company?.accompaniedByCPF})</label>
                       <button onClick={() => responsibleSigRef.current?.clear()} className="text-[10px] text-red-600 font-bold hover:underline">Limpar</button>
                     </div>
                     <div className="border-2 border-dashed border-stone-200 rounded-2xl bg-stone-50 overflow-hidden h-64">
@@ -1151,7 +1152,7 @@ export default function App() {
                       </div>
 
                       <div className="flex justify-between items-stretch mb-8 rounded-lg overflow-hidden border border-black bg-white">
-                        <div className="flex-1 p-4 border-r border-black">
+                        <div className="flex-1 p-4 pb-10 border-r border-black">
                           <h1 className="text-[31px] font-black uppercase leading-none text-black">NOTIFICAÇÃO</h1>
                           <p className="text-[13px] font-bold mt-1 text-black">EXIGÊNCIA DE VISTORIA TÉCNICA</p>
                         </div>
@@ -1257,7 +1258,7 @@ export default function App() {
                             <div>
                               <p className="text-[12px] font-black uppercase text-black" style={{ color: '#000000' }}>{formData.company?.accompaniedBy}</p>
                               <p className="text-[10px] font-bold uppercase text-black" style={{ color: '#000000' }}>CPF: {formData.company?.accompaniedByCPF}</p>
-                              <p className="text-[10px] font-bold uppercase tracking-widest text-black" style={{ color: '#000000' }}>Responsável pelo Local</p>
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-black" style={{ color: '#000000' }}>Acompanhou a Vistoria</p>
                             </div>
                           </div>
                           <div className="space-y-8">
