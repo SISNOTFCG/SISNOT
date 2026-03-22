@@ -364,22 +364,9 @@ export default function App() {
       await addSection('pdf-section-deadline');
       await addIrregularities();
       await addSection('pdf-section-return');
-
-      // Force a new page for the final section to ensure nothing is cut
-      // and to place the footer at the top of the last page as requested.
-      pdf.addPage();
-      currentPage++;
-      currentY = headerHeight;
-      addHeaderAndPageNumber(currentPage);
-
-      // Add footer at the top of the last page
-      await addSection('pdf-section-footer');
-      currentY += 5; // Small gap
-
-      // Add signatures below the footer on the last page
       await addSection('pdf-section-signatures');
 
-      // Finalize PDF: Add page numbers
+      // Finalize PDF: Add page numbers and unit footer
       const totalPages = currentPage;
       for (let i = 1; i <= totalPages; i++) {
         pdf.setPage(i);
@@ -389,6 +376,19 @@ export default function App() {
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(0, 0, 0);
         pdf.text(`${i}/${totalPages}`, 185, 48);
+
+        // Add Unit Footer only on last page at the very bottom
+        if (i === totalPages && formData.unit) {
+          const footerText = GBM_FOOTERS[formData.unit];
+          if (footerText) {
+            pdf.setFontSize(8);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(100, 100, 100);
+            const splitFooter = pdf.splitTextToSize(footerText, pageWidth - 24);
+            const footerY = pageHeight - 10 - (splitFooter.length - 1) * 3;
+            pdf.text(splitFooter, pageWidth / 2, footerY, { align: 'center' });
+          }
+        }
       }
       
       const pdfBase64 = pdf.output('datauristring').split(',')[1];
@@ -1238,8 +1238,8 @@ export default function App() {
                           </div>
                         </div>
 
-                        {/* PDF Footer */}
-                        <div id="pdf-section-footer" className="mt-16 pt-4 border-t border-stone-200 text-center">
+                        {/* PDF Footer (Visual only in preview, added manually to PDF) */}
+                        <div className="mt-16 pt-4 border-t border-stone-200 text-center">
                           <p className="text-[10px] text-stone-500 font-medium leading-tight">
                             {formData.unit && GBM_FOOTERS[formData.unit]}
                           </p>
