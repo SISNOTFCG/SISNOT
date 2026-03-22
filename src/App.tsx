@@ -539,6 +539,7 @@ export default function App() {
                 {pdfUrl && (
                   <a 
                     href={pdfUrl} 
+                    download={`NOT_${(formData.notificationNumber || 'S-N').replace(/[^a-zA-Z0-9_-]/g, '_')}_${(formData.company?.name || 'documento').replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`}
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="bg-stone-900 hover:bg-stone-800 text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg flex items-center gap-2"

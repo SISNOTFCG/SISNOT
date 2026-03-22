@@ -24,6 +24,9 @@ async function startServer() {
     fs.mkdirSync(pdfsDir, { recursive: true });
   }
 
+  // Serve the pdfs directory explicitly so it works in production
+  app.use('/pdfs', express.static(pdfsDir));
+
   // API endpoint to proxy images for CORS
   app.get('/api/proxy-image', async (req, res) => {
     const imageUrl = req.query.url as string;
@@ -48,7 +51,7 @@ async function startServer() {
   app.post('/api/send-pdf', async (req, res) => {
     const { pdfBase64, email, phone, preNumber } = req.body;
 
-    if (!pdfBase64 || !email || !phone) {
+    if (!pdfBase64 || !email) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -61,7 +64,8 @@ async function startServer() {
       fs.writeFileSync(filePath, pdfBuffer);
 
       const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
-      const pdfUrl = `${appUrl}/pdfs/${fileName}`;
+      const absolutePdfUrl = `${appUrl}/pdfs/${fileName}`;
+      const pdfUrl = `/pdfs/${fileName}`;
 
       // 1. Send Email
       const transporter = nodemailer.createTransport({
@@ -93,15 +97,15 @@ async function startServer() {
 
       let smsSent = false;
       try {
-        if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
+        if (phone && process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
           await twilioClient.messages.create({
-            body: `Corpo de Bombeiros: Sua notificação de vistoria está pronta. Baixe aqui: ${pdfUrl}`,
+            body: `Corpo de Bombeiros: Sua notificação de vistoria está pronta. Baixe aqui: ${absolutePdfUrl}`,
             from: process.env.TWILIO_PHONE_NUMBER,
             to: phone.replace(/\D/g, '').startsWith('55') ? `+${phone.replace(/\D/g, '')}` : `+55${phone.replace(/\D/g, '')}`,
           });
           smsSent = true;
         } else {
-          console.log('Twilio credentials not configured, skipping SMS');
+          console.log('Twilio credentials not configured or phone missing, skipping SMS');
         }
       } catch (smsError) {
         console.error('Error sending SMS:', smsError);
