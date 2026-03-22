@@ -39,7 +39,7 @@ export default function App() {
     preNumber: '',
     notificationNumber: '',
     deadlineDays: 30,
-    company: { name: '', cnpj: '', street: '', number: '', neighborhood: '', city: '', address: '', phone: '', occupation: [], pscip: '', accompaniedBy: '', accompaniedByCPF: '', accompaniedByFunction: '' },
+    company: { name: '', cnpj: '', street: '', number: '', neighborhood: '', city: '', complement: '', address: '', phone: '', occupation: [], pscip: '', accompaniedBy: '', accompaniedByCPF: '', accompaniedByFunction: '' },
     irregularities: [],
     responsible: { name: '', email: '@', cpf: '' },
     inspectors: [{ name: '', rank: '', registration: '' }],
@@ -472,7 +472,7 @@ export default function App() {
       preNumber: '',
       notificationNumber: '',
       deadlineDays: 30,
-      company: { name: '', cnpj: '', pscip: '', street: '', number: '', neighborhood: '', city: '', address: '', phone: '', occupation: [], accompaniedBy: '', accompaniedByCPF: '', accompaniedByFunction: '' },
+      company: { name: '', cnpj: '', pscip: '', street: '', number: '', neighborhood: '', city: '', complement: '', address: '', phone: '', occupation: [], accompaniedBy: '', accompaniedByCPF: '', accompaniedByFunction: '' },
       irregularities: [],
       responsible: { name: '', email: '@', cpf: '' },
       inspectors: [{ name: '', rank: '', registration: '' }],
@@ -765,6 +765,26 @@ export default function App() {
                         onChange={(e) => updateNestedField('company', 'neighborhood', e.target.value)}
                         className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
                         placeholder="Centro"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Cidade</label>
+                      <input 
+                        type="text"
+                        value={formData.company?.city}
+                        onChange={(e) => updateNestedField('company', 'city', e.target.value)}
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                        placeholder="Campo Grande"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Complemento</label>
+                      <input 
+                        type="text"
+                        value={formData.company?.complement}
+                        onChange={(e) => updateNestedField('company', 'complement', e.target.value)}
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                        placeholder="Ex: Sala 101, Bloco A"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1174,7 +1194,12 @@ export default function App() {
                             </div>
                             <div className="col-span-2 flex border-b border-stone-100 pb-1" style={{ borderBottomColor: '#f5f5f4' }}>
                               <span className="font-black uppercase w-32 text-black" style={{ color: '#000000' }}>Endereço:</span>
-                              <span className="font-bold text-black" style={{ color: '#000000' }}>{formData.company?.street}, {formData.company?.number} - {formData.company?.neighborhood}</span>
+                              <span className="font-bold text-black" style={{ color: '#000000' }}>
+                                {formData.company?.street}, {formData.company?.number}
+                                {formData.company?.complement && ` - ${formData.company.complement}`}
+                                 - {formData.company?.neighborhood}
+                                {formData.company?.city && ` - ${formData.company.city}`}
+                              </span>
                             </div>
                             <div className="flex border-b border-stone-100 pb-1" style={{ borderBottomColor: '#f5f5f4' }}>
                               <span className="font-black uppercase w-32 text-black" style={{ color: '#000000' }}>Telefone:</span>

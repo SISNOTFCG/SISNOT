@@ -7,6 +7,7 @@ export interface CompanyData {
   number: string;
   neighborhood: string;
   city: string;
+  complement: string;
   address: string;
   phone: string;
   occupation: string[];
