@@ -387,8 +387,8 @@ export default function App() {
         pdf.setFontSize(10);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(0, 0, 0);
-        // Positioned below "EXIGÊNCIA DE VISTORIA TÉCNICA" inside the notification box
-        pdf.text(`PÁGINA: ${i}/${totalPages}`, 16, 56);
+        // Positioned at the top right header of every page
+        pdf.text(`PÁGINA: ${i}/${totalPages}`, pageWidth - 16, 20, { align: 'right' });
 
         // Add Unit Footer only on last page at the very bottom
         if (i === totalPages && formData.unit) {
