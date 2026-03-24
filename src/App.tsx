@@ -422,11 +422,11 @@ export default function App() {
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(0, 0, 0);
         // Positioned at the top right header of every page
-        pdf.text(`PÁGINA: ${i}/${totalPages}`, pageWidth - 16, 20, { align: 'right' });
+        pdf.text(`PÁGINA: ${i}/${totalPages}`.toUpperCase(), pageWidth - 16, 20, { align: 'right' });
 
         // Add Unit Footer only on last page at the very bottom
         if (i === totalPages && formData.unit) {
-          const footerText = GBM_FOOTERS[formData.unit];
+          const footerText = GBM_FOOTERS[formData.unit]?.toUpperCase();
           if (footerText) {
             pdf.setFontSize(8);
             pdf.setFont('helvetica', 'normal');
@@ -1206,7 +1206,7 @@ export default function App() {
                   </div>
 
                   <div className="absolute opacity-100 pointer-events-none -z-50" style={{ left: '-10000px' }}>
-                    <div ref={pdfHeaderRef} className="w-[210mm] p-12 pb-0 font-sans text-black bg-white">
+                    <div ref={pdfHeaderRef} className="w-[210mm] p-12 pb-0 font-sans text-black bg-white uppercase">
                       <div className="flex justify-between items-center pb-6 mb-8 border-b-4 border-black">
                         <img 
                           src={`/api/proxy-image?url=${encodeURIComponent('https://www.bombeiros.ms.gov.br/wp-content/uploads/2015/01/Bras%C3%A3o_estilizado_tipo_texto._jpg.jpg')}`}
@@ -1241,7 +1241,7 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div ref={pdfBodyRef} className="w-[210mm] p-12 pt-0 font-sans text-black bg-white">
+                    <div ref={pdfBodyRef} className="w-[210mm] p-12 pt-0 font-sans text-black bg-white uppercase">
                       <div className="space-y-6">
                         <div id="pdf-section-data" className="rounded-xl border border-black overflow-hidden" style={{ borderColor: '#000000' }}>
                           <div className="text-white px-4 py-2 text-[11px] font-black uppercase tracking-widest bg-black" style={{ backgroundColor: '#000000', color: '#ffffff' }}>Dados da Edificação / Evento</div>
