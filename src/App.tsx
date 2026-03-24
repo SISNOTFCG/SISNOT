@@ -60,6 +60,18 @@ export default function App() {
       .replace(/(-\d{2})\d+?$/, '$1');
   };
 
+  const formatDateInPortuguese = () => {
+    const date = new Date();
+    const day = date.getDate().toString().padStart(2, '0');
+    const months = [
+      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    return `${day} de ${month} de ${year}`;
+  };
+
   const maskCNPJ = (value: string) => {
     return value
       .replace(/\D/g, '')
@@ -130,13 +142,22 @@ export default function App() {
 
   const addCustomIrregularity = () => {
     if (customIrregularity.trim()) {
-      toggleIrregularity(customIrregularity.trim());
+      const item = customIrregularity.trim();
+      setFormData(prev => {
+        const current = prev.irregularities || [];
+        if (current.includes(item)) return prev;
+        return { ...prev, irregularities: [...current, item] };
+      });
       setCustomIrregularity('');
     }
   };
 
   const handleNext = () => {
     setError(null);
+    
+    if (step === 2 && customIrregularity.trim()) {
+      addCustomIrregularity();
+    }
     
     if (step === 1) {
       if (!formData.preNumber) {
@@ -249,6 +270,13 @@ export default function App() {
     
     setIsSubmitting(true);
     setError(null);
+    
+    // Ensure we are at the top for html2canvas
+    window.scrollTo(0, 0);
+    
+    // Small delay to ensure DOM is fully updated
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     try {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = 210;
@@ -336,13 +364,19 @@ export default function App() {
           currentY += imgHeight;
         }
 
-        const items = container.querySelectorAll('.pdf-irregularity-item');
-        for (const item of Array.from(items)) {
+        const items = Array.from(container.querySelectorAll('.pdf-irregularity-item'));
+        console.log(`Found ${items.length} irregularities to add to PDF`);
+        
+        for (const item of items) {
+          // Small delay to ensure rendering
+          await new Promise(resolve => setTimeout(resolve, 50));
+          
           const canvas = await html2canvas(item as HTMLElement, { 
             scale: 2, 
             backgroundColor: '#ffffff',
             useCORS: true,
-            allowTaint: true
+            allowTaint: true,
+            logging: false
           });
           const imgWidth = pageWidth - (sidePadding * 2);
           const imgHeight = (canvas.height * imgWidth) / canvas.width;
@@ -409,9 +443,9 @@ export default function App() {
       
       // Save locally for the user
       // Sanitize filename: remove characters that might cause issues
-      const safeNotificationNumber = (formData.notificationNumber || 'S-N').replace(/[^a-zA-Z0-9_-]/g, '_');
-      const safeCompanyName = (formData.company?.name || 'documento').replace(/[^a-zA-Z0-9_-]/g, '_');
-      const fileName = `NOT_${safeNotificationNumber}_${safeCompanyName}.pdf`;
+      const safeNotificationNumber = (formData.notificationNumber || 'S-N').replace(/[^a-zA-Z0-9_-]/g, ' ');
+      const safeCompanyName = (formData.company?.name || 'documento').replace(/[^a-zA-Z0-9_-]/g, ' ');
+      const fileName = `NOT ${safeNotificationNumber} ${safeCompanyName}`.replace(/_/g, ' ').replace(/\s+/g, ' ').trim() + '.pdf';
       
       try {
         pdf.save(fileName);
@@ -652,9 +686,21 @@ export default function App() {
                       <input 
                         type="text"
                         value={formData.company?.area}
-                        onChange={(e) => updateNestedField('company', 'area', e.target.value)}
+                        onChange={(e) => {
+                          let val = e.target.value.replace(/\D/g, '');
+                          if (val === '') {
+                            updateNestedField('company', 'area', '');
+                            return;
+                          }
+                          const number = parseInt(val, 10) / 100;
+                          const formatted = new Intl.NumberFormat('pt-BR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          }).format(number);
+                          updateNestedField('company', 'area', formatted);
+                        }}
                         className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
-                        placeholder="Ex: 150,00"
+                        placeholder="0,00"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1249,7 +1295,7 @@ export default function App() {
                           </h2>
                           <div className="space-y-3 text-[12px] leading-relaxed text-black" style={{ color: '#000000' }}>
                             <p>Em conformidade com a <strong>Lei Estadual nº 4.335/2013</strong>, Vossa Senhoria deverá cumprir as exigências listadas abaixo no prazo de <span className="text-black font-black underline decoration-2 underline-offset-4" style={{ color: '#000000' }}>{formData.deadlineDays} DIAS</span>, a contar da data de recebimento deste documento.</p>
-                            <p className="text-black font-bold" style={{ color: '#000000' }}>O prazo para cumprimento desta notificação se encerra em: {formData.date && formData.deadlineDays ? format(addDays(new Date(formData.date), formData.deadlineDays), "dd/MM/yyyy") : format(addDays(new Date(), 30), "dd/MM/yyyy")}</p>
+                            <p className="text-red-600 font-black uppercase" style={{ color: '#ff0000' }}>O PRAZO PARA CUMPRIMENTO DESTA NOTIFICAÇÃO SE ENCERRA EM: {formData.date && formData.deadlineDays ? format(addDays(new Date(formData.date), formData.deadlineDays), "dd/MM/yyyy") : format(addDays(new Date(), 30), "dd/MM/yyyy")}</p>
                             <p className="font-bold text-black" style={{ color: '#000000' }}>O não cumprimento desta notificação sujeita o infrator à multa, interdição ou outras penalidades previstas em Lei.</p>
                             <p className="border-l-4 border-black pl-3 italic text-black" style={{ borderLeftColor: '#000000', color: '#000000' }}>Vossa Senhoria fica cientificada de que, conforme o Art. 9º da Lei nº 4.335/2013, o local não pode funcionar sem o devido Alvará do Corpo de Bombeiros Militar do Mato Grosso do Sul.</p>
                           </div>
@@ -1288,6 +1334,11 @@ export default function App() {
                           <div className="col-span-2 mb-6 text-[12px] leading-relaxed text-black" style={{ color: '#000000' }}>
                             EU <span className="font-bold underline">{formData.company?.accompaniedBy || '____________________'}</span>, CPF Nº <span className="font-bold underline">{formData.company?.accompaniedByCPF || '____________________'}</span>, recebi o presente documento e declaro que tenho ciência da NOTIFICAÇÃO e do prazo para cumprimento da mesma.
                           </div>
+                          
+                          <div className="col-span-2 text-right text-[12px] font-bold text-black mb-8" style={{ color: '#000000' }}>
+                            {formData.company?.city?.toUpperCase() || 'CIDADE'} - MS, {formatDateInPortuguese()}
+                          </div>
+
                           <div className="text-center space-y-3">
                             <div className="h-24 flex items-end justify-center border-b-2 border-black pb-2" style={{ borderBottomColor: '#000000' }}>
                               {formData.signatures?.responsible && <img src={formData.signatures.responsible} className="max-h-full grayscale" alt="Assinatura Responsável" />}
