@@ -12,6 +12,8 @@ export interface CompanyData {
   phone: string;
   occupation: string[];
   pscip: string;
+  pscipStatus: 'APROVADO' | 'EM ANÁLISE' | 'PTS' | '';
+  area: string;
   accompaniedBy: string;
   accompaniedByCPF: string;
   accompaniedByFunction: string;

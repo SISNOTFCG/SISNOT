@@ -39,7 +39,7 @@ export default function App() {
     preNumber: '',
     notificationNumber: '',
     deadlineDays: 30,
-    company: { name: '', cnpj: '', street: '', number: '', neighborhood: '', city: '', complement: '', address: '', phone: '', occupation: [], pscip: '', accompaniedBy: '', accompaniedByCPF: '', accompaniedByFunction: '' },
+    company: { name: '', cnpj: '', street: '', number: '', neighborhood: '', city: '', complement: '', address: '', phone: '', occupation: [], pscip: '', pscipStatus: '', area: '', accompaniedBy: '', accompaniedByCPF: '', accompaniedByFunction: '' },
     irregularities: [],
     responsible: { name: '', email: '@', cpf: '' },
     inspectors: [{ name: '', rank: '', registration: '' }],
@@ -473,7 +473,7 @@ export default function App() {
       preNumber: '',
       notificationNumber: '',
       deadlineDays: 30,
-      company: { name: '', cnpj: '', pscip: '', street: '', number: '', neighborhood: '', city: '', complement: '', address: '', phone: '', occupation: [], accompaniedBy: '', accompaniedByCPF: '', accompaniedByFunction: '' },
+      company: { name: '', cnpj: '', pscip: '', pscipStatus: '', area: '', street: '', number: '', neighborhood: '', city: '', complement: '', address: '', phone: '', occupation: [], accompaniedBy: '', accompaniedByCPF: '', accompaniedByFunction: '' },
       irregularities: [],
       responsible: { name: '', email: '@', cpf: '' },
       inspectors: [{ name: '', rank: '', registration: '' }],
@@ -635,6 +635,29 @@ export default function App() {
                       />
                     </div>
                     <div className="space-y-2">
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Status PSCIP</label>
+                      <select 
+                        value={formData.company?.pscipStatus}
+                        onChange={(e) => updateNestedField('company', 'pscipStatus', e.target.value)}
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none appearance-none"
+                      >
+                        <option value="">Selecione...</option>
+                        <option value="APROVADO">APROVADO</option>
+                        <option value="EM ANÁLISE">EM ANÁLISE</option>
+                        <option value="PTS">PTS</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">ÁREA (M²)</label>
+                      <input 
+                        type="text"
+                        value={formData.company?.area}
+                        onChange={(e) => updateNestedField('company', 'area', e.target.value)}
+                        className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none"
+                        placeholder="Ex: 150,00"
+                      />
+                    </div>
+                    <div className="space-y-2">
                       <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Nome / Razão Social <span className="text-red-500">*</span></label>
                       <input 
                         type="text"
@@ -685,7 +708,7 @@ export default function App() {
                       />
                     </div>
                     <div className="space-y-2 md:col-span-2 relative">
-                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">OCUPAÇÃO (Selecione uma ou mais)</label>
+                      <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">CLASSIFICAÇÃO DA EDIFICAÇÃO (Selecione uma ou mais)</label>
                       <div 
                         onClick={() => setIsOccupationDropdownOpen(!isOccupationDropdownOpen)}
                         className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl flex justify-between items-center cursor-pointer hover:border-stone-300 transition-colors"
@@ -1020,6 +1043,9 @@ export default function App() {
                     <PenTool className="text-red-600" />
                     <h2 className="text-xl font-bold">Assinatura de quem acompanhou a vistoria</h2>
                   </div>
+                  <div className="p-4 bg-stone-100 rounded-xl text-xs text-stone-700 leading-relaxed border-l-4 border-red-600">
+                    EU <span className="font-bold underline">{formData.company?.accompaniedBy || '____________________'}</span>, CPF Nº <span className="font-bold underline">{formData.company?.accompaniedByCPF || '____________________'}</span>, recebi o presente documento e declaro que tenho ciência da NOTIFICAÇÃO e do prazo para cumprimento da mesma.
+                  </div>
                   <div className="space-y-3">
                     <div className="flex justify-between items-end">
                       <label className="text-xs font-bold text-stone-500 uppercase tracking-wider">Assinatura ({formData.company?.accompaniedBy} - CPF: {formData.company?.accompaniedByCPF})</label>
@@ -1183,15 +1209,22 @@ export default function App() {
                               <span className="font-bold text-black" style={{ color: '#000000' }}>{formData.company?.cnpj}</span>
                             </div>
                             <div className="flex border-b border-stone-100 pb-1" style={{ borderBottomColor: '#f5f5f4' }}>
-                              <span className="font-black uppercase w-32 text-black" style={{ color: '#000000' }}>Nº PSCIP:</span>
-                              <span className="font-bold text-black" style={{ color: '#000000' }}>{formData.company?.pscip}</span>
+                              <span className="font-black uppercase w-32 text-black" style={{ color: '#000000' }}>{formData.company?.pscipStatus === 'PTS' ? 'PTS:' : 'Nº PSCIP:'}</span>
+                              <span className="font-bold text-black" style={{ color: '#000000' }}>
+                                {formData.company?.pscip} 
+                                {formData.company?.pscipStatus && formData.company?.pscipStatus !== 'PTS' && ` ${formData.company.pscipStatus}`}
+                              </span>
+                            </div>
+                            <div className="flex border-b border-stone-100 pb-1" style={{ borderBottomColor: '#f5f5f4' }}>
+                              <span className="font-black uppercase w-32 text-black" style={{ color: '#000000' }}>ÁREA:</span>
+                              <span className="font-bold text-black" style={{ color: '#000000' }}>{formData.company?.area ? `${formData.company.area} M²` : ''}</span>
                             </div>
                             <div className="flex border-b border-stone-100 pb-1" style={{ borderBottomColor: '#f5f5f4' }}>
                               <span className="font-black uppercase w-32 text-black" style={{ color: '#000000' }}>Responsável:</span>
                               <span className="font-bold text-black" style={{ color: '#000000' }}>{formData.responsible?.name}</span>
                             </div>
                             <div className="flex border-b border-stone-100 pb-1" style={{ borderBottomColor: '#f5f5f4' }}>
-                              <span className="font-black uppercase w-32 text-black" style={{ color: '#000000' }}>Ocupação:</span>
+                              <span className="font-black uppercase w-32 text-black" style={{ color: '#000000' }}>Classificação da Edificação:</span>
                               <span className="font-bold text-black" style={{ color: '#000000' }}>{formData.company?.occupation?.join(', ')}</span>
                             </div>
                             <div className="col-span-2 flex border-b border-stone-100 pb-1" style={{ borderBottomColor: '#f5f5f4' }}>
@@ -1252,6 +1285,9 @@ export default function App() {
                         </div>
 
                         <div id="pdf-section-signatures" className="mt-12 grid grid-cols-2 gap-12 pb-12">
+                          <div className="col-span-2 mb-6 text-[12px] leading-relaxed text-black" style={{ color: '#000000' }}>
+                            EU <span className="font-bold underline">{formData.company?.accompaniedBy || '____________________'}</span>, CPF Nº <span className="font-bold underline">{formData.company?.accompaniedByCPF || '____________________'}</span>, recebi o presente documento e declaro que tenho ciência da NOTIFICAÇÃO e do prazo para cumprimento da mesma.
+                          </div>
                           <div className="text-center space-y-3">
                             <div className="h-24 flex items-end justify-center border-b-2 border-black pb-2" style={{ borderBottomColor: '#000000' }}>
                               {formData.signatures?.responsible && <img src={formData.signatures.responsible} className="max-h-full grayscale" alt="Assinatura Responsável" />}
