@@ -12,7 +12,15 @@ import {
   ChevronRight,
   ChevronLeft,
   Plus,
-  Trash2
+  Trash2,
+  Shield,
+  Mail,
+  Key,
+  Eye,
+  EyeOff,
+  LogIn,
+  Info,
+  HelpCircle
 } from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
 import { motion, AnimatePresence } from 'motion/react';
@@ -23,7 +31,8 @@ import { cn } from './utils';
 import { InspectionData, IRREGULARITIES_LIST, INSPECTOR_RANKS, OCCUPATIONS_LIST, GBM_OPTIONS, GBM_FOOTERS } from './types';
 
 export default function App() {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -514,6 +523,109 @@ export default function App() {
       signatures: { responsible: '', inspectors: [] }
     });
   };
+
+  if (step === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden font-sans" style={{ background: 'linear-gradient(135deg, #0d47a1, #212121)' }}>
+        {/* Background pattern */}
+        <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\' preserveAspectRatio=\'none\'><path d=\'M0,0 L100,0 L100,100 Z\' fill=\'%23ffffff\'/></svg>")', backgroundSize: 'cover' }} />
+        
+        <div className="w-full max-w-[450px] mx-auto z-10 p-4">
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="bg-white/95 backdrop-blur-md rounded-2xl shadow-[0_15px_35px_rgba(0,0,0,0.3)] overflow-hidden"
+          >
+            {/* Header */}
+            <div className="relative p-8 text-center text-white overflow-hidden" style={{ background: 'linear-gradient(135deg, #800000, #ff2800)' }}>
+              <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] opacity-20" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
+              
+              <div className="relative z-10 flex flex-col items-center justify-center">
+                <img src="/api/proxy-image?url=https%3A%2F%2Fitp.arione.com.br%2Flogo_yellow.png" alt="CBM Logo" className="h-[70px] mb-6 drop-shadow-md object-contain mx-auto" />
+                <h1 className="text-2xl font-extrabold m-0 drop-shadow-md text-center">
+                  SISTEMA DE NOTIFICAÇÕES
+                </h1>
+                <p className="mt-2 mb-4 opacity-90 font-light text-lg text-center">Acesso ao Sistema de Notificações de Vistorias</p>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-10">
+              <form onSubmit={(e) => { e.preventDefault(); setStep(1); }}>
+                <div className="relative mb-6 group">
+                  <input 
+                    type="email" 
+                    id="email" 
+                    required 
+                    className="w-full rounded-xl px-4 py-3.5 border-2 border-stone-200 focus:border-blue-800 focus:ring-4 focus:ring-blue-800/15 transition-all text-base outline-none peer"
+                    placeholder=" "
+                  />
+                  <label 
+                    htmlFor="email" 
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white px-2 text-stone-500 transition-all peer-focus:top-0 peer-focus:scale-90 peer-focus:text-blue-800 peer-focus:font-semibold peer-[:not(:placeholder-shown)]:top-0 peer-[:not(:placeholder-shown)]:scale-90 flex items-center gap-2 pointer-events-none"
+                  >
+                    <Mail className="w-4 h-4" /> E-mail Institucional
+                  </label>
+                </div>
+
+                <div className="relative mb-6 group">
+                  <input 
+                    type={showPassword ? "text" : "password"} 
+                    id="password" 
+                    required 
+                    className="w-full rounded-xl px-4 py-3.5 border-2 border-stone-200 focus:border-blue-800 focus:ring-4 focus:ring-blue-800/15 transition-all text-base outline-none peer pr-12"
+                    placeholder=" "
+                  />
+                  <label 
+                    htmlFor="password" 
+                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-white px-2 text-stone-500 transition-all peer-focus:top-0 peer-focus:scale-90 peer-focus:text-blue-800 peer-focus:font-semibold peer-[:not(:placeholder-shown)]:top-0 peer-[:not(:placeholder-shown)]:scale-90 flex items-center gap-2 pointer-events-none"
+                  >
+                    <Key className="w-4 h-4" /> Senha Militar
+                  </label>
+                  <button 
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-800 hover:text-blue-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between mb-8">
+                  <label className="flex items-center gap-2 cursor-pointer text-stone-600">
+                    <input type="checkbox" className="w-4 h-4 rounded border-stone-300 text-blue-800 focus:ring-blue-800" />
+                    <span>Manter conectado</span>
+                  </label>
+                  <a href="#" className="text-sm text-stone-500 hover:text-blue-800 flex items-center gap-1 transition-colors">
+                    <HelpCircle className="w-4 h-4" /> Esqueceu a senha?
+                  </a>
+                </div>
+
+                <button 
+                  type="submit" 
+                  className="w-full py-3.5 rounded-xl font-bold text-lg tracking-wide text-white transition-all hover:-translate-y-1 hover:shadow-[0_7px_14px_rgba(0,0,0,0.2)] flex items-center justify-center gap-2"
+                  style={{ background: 'linear-gradient(135deg, #800000, #ff2800)' }}
+                >
+                  <LogIn className="w-5 h-5" /> EMITIR NOTIFICAÇÃO
+                </button>
+              </form>
+            </div>
+
+            {/* Footer */}
+            <div className="text-center p-6 bg-stone-50 border-t border-black/10 text-sm">
+              <p className="mb-0 text-stone-800">
+                <strong>Corpo de Bombeiros Militar</strong>
+                <br />
+                <span className="text-stone-500">Sistema de Notificação de Vistorias</span>
+              </p>
+              <p className="text-stone-400 mt-2 text-xs">© 2026</p>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900 font-sans pb-12">
